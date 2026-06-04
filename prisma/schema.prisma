@@ -1,0 +1,180 @@
+// prisma/schema.prisma
+// Sumber kebenaran skema DB platform media berita (PostgreSQL).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Peran staf redaksi (RBAC). Default-deny: hak ditentukan per-peran.
+enum UserRole {
+  ADMIN
+  EDITOR
+  AUTHOR
+  CONTRIBUTOR
+}
+
+/// Status alur editorial sebuah artikel.
+enum ArticleStatus {
+  DRAFT
+  IN_REVIEW
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+/// Status moderasi komentar pembaca.
+enum CommentStatus {
+  PENDING
+  APPROVED
+  SPAM
+}
+
+/// Staf redaksi / pengguna internal sistem.
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         UserRole @default(CONTRIBUTOR)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  articles      Article[]
+  uploadedMedia Media[]
+  revisions     Revision[]
+  comments      Comment[]
+
+  @@index([role])
+  @@map("users")
+}
+
+/// Rubrik berita; mendukung hierarki via self-relation parent/children.
+model Category {
+  id       String  @id @default(uuid()) @db.Uuid
+  slug     String  @unique
+  name     String
+  parentId String? @map("parent_id") @db.Uuid
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryTree")
+  articles Article[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+/// Label many-to-many untuk artikel.
+model Tag {
+  id        String       @id @default(uuid()) @db.Uuid
+  slug      String       @unique
+  name      String
+  articles  ArticleTag[]
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@map("tags")
+}
+
+/// Konten berita inti + metadata editorial & SEO.
+model Article {
+  id              String        @id @default(uuid()) @db.Uuid
+  slug            String        @unique
+  title           String
+  excerpt         String?
+  body            Json
+  status          ArticleStatus @default(DRAFT)
+  authorId        String        @map("author_id") @db.Uuid
+  categoryId      String?       @map("category_id") @db.Uuid
+  featuredMediaId String?       @map("featured_media_id") @db.Uuid
+  seoTitle        String?       @map("seo_title")
+  seoDescription  String?       @map("seo_description")
+  viewCount       Int           @default(0) @map("view_count")
+  publishedAt     DateTime?     @map("published_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  author        User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  category      Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  featuredMedia Media?       @relation("ArticleFeaturedMedia", fields: [featuredMediaId], references: [id], onDelete: SetNull)
+  tags          ArticleTag[]
+  revisions     Revision[]
+  comments      Comment[]
+
+  // Indeks utama: daftar artikel published terbaru, filter rubrik, dan author.
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([categoryId])
+  @@index([authorId])
+  @@map("articles")
+}
+
+/// Join table artikel <-> tag (PK komposit).
+model ArticleTag {
+  articleId String @map("article_id") @db.Uuid
+  tagId     String @map("tag_id") @db.Uuid
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+  @@index([tagId])
+  @@map("article_tags")
+}
+
+/// Aset media; DB menyimpan metadata + storage key, file fisik di storage.
+model Media {
+  id           String   @id @default(uuid()) @db.Uuid
+  storageKey   String   @map("storage_key")
+  mimeType     String   @map("mime_type")
+  size         Int
+  width        Int?
+  height       Int?
+  alt          String?
+  uploadedById String   @map("uploaded_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  uploadedBy      User      @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  featuredInArticles Article[] @relation("ArticleFeaturedMedia")
+
+  @@index([uploadedById])
+  @@map("media")
+}
+
+/// Snapshot revisi artikel untuk audit & histori editorial.
+model Revision {
+  id        String   @id @default(uuid()) @db.Uuid
+  articleId String   @map("article_id") @db.Uuid
+  editorId  String   @map("editor_id") @db.Uuid
+  snapshot  Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  editor  User    @relation(fields: [editorId], references: [id], onDelete: Restrict)
+
+  @@index([articleId, createdAt(sort: Desc)])
+  @@map("revisions")
+}
+
+/// Komentar pembaca dengan moderasi.
+model Comment {
+  id         String        @id @default(uuid()) @db.Uuid
+  articleId  String        @map("article_id") @db.Uuid
+  userId     String?       @map("user_id") @db.Uuid
+  authorName String?       @map("author_name")
+  body       String
+  status     CommentStatus @default(PENDING)
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([articleId, status])
+  @@map("comments")
+}
