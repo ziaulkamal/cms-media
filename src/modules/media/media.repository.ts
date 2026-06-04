@@ -19,6 +19,10 @@ export class MediaRepository {
     return this.prisma.media.findUnique({ where: { id } });
   }
 
+  update(id: string, data: Prisma.MediaUpdateInput): Promise<Media> {
+    return this.prisma.media.update({ where: { id }, data });
+  }
+
   delete(id: string): Promise<Media> {
     return this.prisma.media.delete({ where: { id } });
   }

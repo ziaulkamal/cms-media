@@ -15,6 +15,18 @@ export class TagsRepository {
     return this.prisma.tag.create({ data });
   }
 
+  update(id: string, data: Prisma.TagUpdateInput): Promise<Tag> {
+    return this.prisma.tag.update({ where: { id }, data });
+  }
+
+  delete(id: string): Promise<Tag> {
+    return this.prisma.tag.delete({ where: { id } });
+  }
+
+  findById(id: string): Promise<Tag | null> {
+    return this.prisma.tag.findUnique({ where: { id } });
+  }
+
   findBySlug(slug: string): Promise<Tag | null> {
     return this.prisma.tag.findUnique({ where: { slug } });
   }
@@ -23,11 +35,12 @@ export class TagsRepository {
     return this.prisma.tag.findMany({ orderBy: { name: 'asc' } });
   }
 
-  async slugExists(slug: string): Promise<boolean> {
+  /** Apakah slug sudah dipakai (kecualikan id tertentu saat update). */
+  async slugExists(slug: string, exceptId?: string): Promise<boolean> {
     const found = await this.prisma.tag.findUnique({
       where: { slug },
       select: { id: true },
     });
-    return found !== null;
+    return found !== null && found.id !== exceptId;
   }
 }

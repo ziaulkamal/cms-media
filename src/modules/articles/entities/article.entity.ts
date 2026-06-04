@@ -30,6 +30,7 @@ export interface ArticleView {
   status: string;
   seoTitle: string | null;
   seoDescription: string | null;
+  seoKeywords: string[];
   viewCount: number;
   publishedAt: Date | null;
   createdAt: Date;
@@ -50,6 +51,7 @@ export function toArticleView(a: ArticleWithRelations): ArticleView {
     status: a.status,
     seoTitle: a.seoTitle,
     seoDescription: a.seoDescription,
+    seoKeywords: a.seoKeywords,
     viewCount: a.viewCount,
     publishedAt: a.publishedAt,
     createdAt: a.createdAt,

@@ -16,6 +16,11 @@ export interface AppConfig {
     refreshSecret: string;
     refreshTtl: string;
   };
+  cookie: {
+    secure: boolean;
+    sameSite: 'lax' | 'strict' | 'none';
+    domain?: string;
+  };
   storage: {
     driver: string;
     localDir: string;
@@ -40,6 +45,14 @@ export default (): AppConfig => ({
     accessTtl: process.env.JWT_ACCESS_TTL ?? '900s',
     refreshSecret: process.env.JWT_REFRESH_SECRET as string,
     refreshTtl: process.env.JWT_REFRESH_TTL ?? '7d',
+  },
+  cookie: {
+    secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
+    sameSite: (process.env.COOKIE_SAMESITE ?? 'lax') as
+      | 'lax'
+      | 'strict'
+      | 'none',
+    domain: process.env.COOKIE_DOMAIN || undefined,
   },
   storage: {
     driver: process.env.STORAGE_DRIVER ?? 'local',

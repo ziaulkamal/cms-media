@@ -9,6 +9,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -19,6 +20,7 @@ import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { AuthenticatedUser } from '../../common/types/authenticated-user';
+import { UpdateMediaDto } from './dto/update-media.dto';
 import { MediaService } from './media.service';
 
 /** Batas keras unggahan di lapisan transport (validasi final di service). */
@@ -53,6 +55,16 @@ export class MediaController {
   @Get(':id')
   get(@Param('id', ParseUUIDPipe) id: string) {
     return this.media.getById(id);
+  }
+
+  /** Ubah metadata media (judul/deskripsi/alt) untuk SEO. */
+  @Patch(':id')
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateMediaDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.media.updateMeta(id, dto, user);
   }
 
   @Delete(':id')

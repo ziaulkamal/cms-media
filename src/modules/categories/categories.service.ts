@@ -42,6 +42,13 @@ export class CategoriesService {
     });
   }
 
+  /** Hapus kategori; artikel & sub-kategori terkait di-SetNull oleh DB. */
+  async remove(id: string): Promise<{ id: string }> {
+    await this.getOrFail(id);
+    await this.repo.delete(id);
+    return { id };
+  }
+
   /** Daftar seluruh kategori. */
   list(): Promise<Category[]> {
     return this.repo.findAll();

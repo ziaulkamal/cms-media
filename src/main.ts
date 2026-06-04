@@ -7,12 +7,18 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
+import { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import {
+  CSRF_TOKEN_COOKIE,
+  issueCsrfCookie,
+} from './common/utils/auth-cookies';
 
 /** Inisialisasi dan jalankan HTTP server Nest dengan fondasi keamanan global. */
 async function bootstrap(): Promise<void> {
@@ -23,6 +29,16 @@ async function bootstrap(): Promise<void> {
 
   // crossOriginResourcePolicy dilonggarkan agar aset /uploads bisa dimuat lintas origin.
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+  // Parse cookie agar token httpOnly & CSRF terbaca guard/strategy.
+  app.use(cookieParser());
+
+  // Seed cookie CSRF pada request aman bila belum ada (double-submit pattern).
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const cookies = req.cookies as Record<string, string> | undefined;
+    if (!cookies?.[CSRF_TOKEN_COOKIE]) issueCsrfCookie(res, config);
+    next();
+  });
 
   // Serve berkas media lokal sebagai aset statis publik di /uploads.
   const uploadsDir = config.get<string>('storage.localDir') ?? 'storage/uploads';

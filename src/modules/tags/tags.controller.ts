@@ -2,12 +2,22 @@
  * src/modules/tags/tags.controller.ts
  * Endpoint Tag: baca publik + buat (editor ke atas).
  */
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CreateTagDto } from './dto/create-tag.dto';
+import { UpdateTagDto } from './dto/update-tag.dto';
 import { TagsService } from './tags.service';
 
 /** Route tag; GET publik, tulis butuh peran editor ke atas. */
@@ -32,5 +42,17 @@ export class TagsController {
   @Post()
   create(@Body() dto: CreateTagDto) {
     return this.tags.create(dto);
+  }
+
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Patch(':id')
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTagDto) {
+    return this.tags.update(id, dto);
+  }
+
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tags.remove(id);
   }
 }

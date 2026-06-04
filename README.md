@@ -75,6 +75,11 @@ npm run start:dev
 
 Server berjalan di `http://localhost:3000` dengan prefix `/api/v1`.
 
+### Dummy data & Panel Admin
+
+- Isi data contoh: `npm run prisma:seed` (akun multi-role, kategori, tag, artikel, komentar, iklan, setting).
+- Panel admin (SPA Vue) ada di [`admin/`](admin/). Panduan menjalankan keduanya end-to-end + daftar akun login: **[docs/MENJALANKAN.md](docs/MENJALANKAN.md)**.
+
 ## Script
 
 | Perintah                  | Fungsi                                  |

@@ -50,4 +50,11 @@ export class CreateArticleDto {
   @IsString()
   @MaxLength(320)
   seoDescription?: string;
+
+  /** Kata kunci SEO; tiap elemen satu keyword (dipisah koma di UI). */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(60, { each: true })
+  seoKeywords?: string[];
 }

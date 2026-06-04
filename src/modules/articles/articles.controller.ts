@@ -91,6 +91,15 @@ export class ArticlesController {
     return this.articles.archive(id, user);
   }
 
+  /** Kembalikan artikel ke status draft (pemilik atau editor ke atas). */
+  @Post(':id/draft')
+  draft(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.articles.draft(id, user);
+  }
+
   /** Ubah artikel (pemilik atau editor ke atas). */
   @Patch(':id')
   update(

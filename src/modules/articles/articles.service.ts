@@ -44,6 +44,7 @@ export class ArticlesService {
       excerpt: dto.excerpt,
       seoTitle: dto.seoTitle,
       seoDescription: dto.seoDescription,
+      seoKeywords: dto.seoKeywords ?? [],
       author: { connect: { id: user.id } },
       category: dto.categoryId ? { connect: { id: dto.categoryId } } : undefined,
       featuredMedia: dto.featuredMediaId
@@ -71,6 +72,7 @@ export class ArticlesService {
       excerpt: dto.excerpt,
       seoTitle: dto.seoTitle,
       seoDescription: dto.seoDescription,
+      seoKeywords: dto.seoKeywords,
       category: dto.categoryId ? { connect: { id: dto.categoryId } } : undefined,
       featuredMedia: dto.featuredMediaId
         ? { connect: { id: dto.featuredMediaId } }
@@ -121,6 +123,7 @@ export class ArticlesService {
       body: current.body as Prisma.InputJsonValue,
       seoTitle: current.seoTitle,
       seoDescription: current.seoDescription,
+      seoKeywords: current.seoKeywords,
       status: current.status,
     };
     const published = await this.repo.publishWithRevision(
@@ -142,6 +145,19 @@ export class ArticlesService {
     this.assertCanManage(current, user);
     return toArticleView(
       await this.repo.update(id, { status: ArticleStatus.ARCHIVED }),
+    );
+  }
+
+  /** Kembalikan artikel ke DRAFT; lepas tanggal terbit (editor ke atas atau pemilik). */
+  async draft(id: string, user: AuthenticatedUser): Promise<ArticleView> {
+    const current = await this.getEntityOrFail(id);
+    this.assertCanManage(current, user);
+    if (current.status === ArticleStatus.DRAFT) return toArticleView(current);
+    return toArticleView(
+      await this.repo.update(id, {
+        status: ArticleStatus.DRAFT,
+        publishedAt: null,
+      }),
     );
   }
 

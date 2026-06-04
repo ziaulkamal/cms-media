@@ -5,6 +5,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -50,5 +51,11 @@ export class CategoriesController {
     @Body() dto: UpdateCategoryDto,
   ) {
     return this.categories.update(id, dto);
+  }
+
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.categories.remove(id);
   }
 }

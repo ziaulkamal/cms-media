@@ -1,52 +1,85 @@
 /**
  * src/modules/auth/auth.controller.ts
- * Endpoint autentikasi: login (publik, rate-limited), refresh, logout.
+ * Endpoint autentikasi berbasis httpOnly cookie: login, refresh, logout, me.
  */
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthenticatedUser } from '../../common/types/authenticated-user';
+import {
+  clearAuthCookies,
+  issueCsrfCookie,
+  setAuthCookies,
+} from '../../common/utils/auth-cookies';
+import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 
-/** Route autentikasi; login dibatasi ketat untuk menahan brute force. */
+/** Route autentikasi; token disimpan di httpOnly cookie (aman dari XSS). */
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly users: UsersService,
+    private readonly config: ConfigService,
+  ) {}
 
-  /** Login publik; rate-limit ketat: 5 percobaan / menit. */
+  /** Login publik (rate-limit 5/menit): set cookie auth + CSRF, balikan profil user. */
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginDto) {
-    return this.auth.login(dto.email, dto.password);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { tokens, user } = await this.auth.login(dto.email, dto.password);
+    setAuthCookies(res, tokens, this.config);
+    issueCsrfCookie(res, this.config);
+    return this.users.getById(user.id);
   }
 
-  /** Tukar refresh token dengan pasangan token baru (rotasi). */
+  /** Rotasi token dari refresh cookie -> set cookie baru. */
   @Public()
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  refresh(@CurrentUser() user: AuthenticatedUser) {
-    return this.auth.refresh(user);
+  async refresh(
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const tokens = await this.auth.refresh(user);
+    setAuthCookies(res, tokens, this.config);
+    issueCsrfCookie(res, this.config);
+    return this.users.getById(user.id);
   }
 
-  /** Logout: token stateless dibuang di sisi client (revocation -> Redis, fase 9). */
+  /** Logout: hapus kedua cookie auth (token stateless dibuang). */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  logout() {
-    return { message: 'Logout berhasil. Hapus token di sisi client.' };
+  logout(@Res({ passthrough: true }) res: Response) {
+    clearAuthCookies(res, this.config);
+    return { message: 'Logout berhasil.' };
+  }
+
+  /** Profil pengguna saat ini (sumber role untuk SPA berbasis cookie). */
+  @Get('me')
+  me(@CurrentUser() user: AuthenticatedUser) {
+    return this.users.getById(user.id);
   }
 }

@@ -19,6 +19,10 @@ export class CategoriesRepository {
     return this.prisma.category.update({ where: { id }, data });
   }
 
+  delete(id: string): Promise<Category> {
+    return this.prisma.category.delete({ where: { id } });
+  }
+
   findById(id: string): Promise<Category | null> {
     return this.prisma.category.findUnique({ where: { id } });
   }

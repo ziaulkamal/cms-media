@@ -13,6 +13,8 @@ import {
 } from '../../common/errors/domain-error';
 import { Paginated } from '../../common/interceptors/response.interceptor';
 import { AuthenticatedUser } from '../../common/types/authenticated-user';
+import { slugify } from '../../common/utils/slug';
+import { UpdateMediaDto } from './dto/update-media.dto';
 import { MediaRepository } from './media.repository';
 import { MediaView, toMediaView } from './entities/media.entity';
 import { STORAGE_PORT, StoragePort } from './storage/storage-port';
@@ -57,14 +59,35 @@ export class MediaService {
       originalName: file.originalname,
     });
 
+    // Judul default: slug dari nama file (tanpa ekstensi) bila tak diberikan.
+    const baseName = file.originalname.replace(/\.[^.]+$/, '');
+    const title = slugify(baseName) || 'gambar';
+
     const media = await this.repo.create({
       storageKey: key,
       mimeType: file.mimetype,
       size: file.size,
+      title,
       alt,
       uploadedBy: { connect: { id: user.id } },
     });
     return toMediaView(media);
+  }
+
+  /** Ubah metadata media (judul/deskripsi/alt); pengunggah atau editor ke atas. */
+  async updateMeta(
+    id: string,
+    dto: UpdateMediaDto,
+    user: AuthenticatedUser,
+  ): Promise<MediaView> {
+    const media = await this.getOrFail(id);
+    this.assertCanManage(media, user);
+    const updated = await this.repo.update(id, {
+      title: dto.title,
+      description: dto.description,
+      alt: dto.alt,
+    });
+    return toMediaView(updated);
   }
 
   /** Daftar media ber-paginasi. */

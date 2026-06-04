@@ -18,6 +18,12 @@ export interface TokenPair {
   refreshToken: string;
 }
 
+/** Hasil login: token + identitas terverifikasi (dipakai controller set-cookie). */
+export interface LoginResult {
+  tokens: TokenPair;
+  user: AuthenticatedUser;
+}
+
 /** Service Auth: login, refresh (rotasi), dan penerbitan token. */
 @Injectable()
 export class AuthService {
@@ -30,18 +36,19 @@ export class AuthService {
   ) {}
 
   /** Verifikasi email+password; lempar 401 bila gagal, jika sukses terbitkan token. */
-  async login(email: string, password: string): Promise<TokenPair> {
+  async login(email: string, password: string): Promise<LoginResult> {
     const user = await this.users.verifyCredentials(email, password);
     if (!user) {
       this.audit.warn(`login.failed email=${email}`);
       throw new UnauthorizedError('Email atau password salah.');
     }
     this.audit.log(`login.success userId=${user.id} role=${user.role}`);
-    return this.issueTokens({
+    const identity: AuthenticatedUser = {
       id: user.id,
       email: user.email,
       role: user.role,
-    });
+    };
+    return { tokens: await this.issueTokens(identity), user: identity };
   }
 
   /** Terbitkan token baru dari refresh token yang sudah tervalidasi (rotasi). */

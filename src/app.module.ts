@@ -8,6 +8,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
+import { CsrfGuard } from './common/guards/csrf.guard';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PrismaModule } from './prisma/prisma.module';
@@ -20,6 +21,7 @@ import { AdsModule } from './modules/ads/ads.module';
 import { MediaModule } from './modules/media/media.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { HealthModule } from './modules/health/health.module';
+import { PagesModule } from './modules/pages/pages.module';
 import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
@@ -48,11 +50,13 @@ import { SettingsModule } from './modules/settings/settings.module';
     MediaModule,
     CommentsModule,
     HealthModule,
+    PagesModule,
     SettingsModule,
   ],
   providers: [
-    // Urutan penting: rate-limit -> autentikasi -> otorisasi (RBAC).
+    // Urutan penting: rate-limit -> CSRF -> autentikasi -> otorisasi (RBAC).
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: CsrfGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

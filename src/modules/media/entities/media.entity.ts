@@ -13,6 +13,8 @@ export interface MediaView {
   size: number;
   width: number | null;
   height: number | null;
+  title: string | null;
+  description: string | null;
   alt: string | null;
   createdAt: Date;
 }
@@ -26,6 +28,8 @@ export function toMediaView(m: Media): MediaView {
     size: m.size,
     width: m.width,
     height: m.height,
+    title: m.title,
+    description: m.description,
     alt: m.alt,
     createdAt: m.createdAt,
   };

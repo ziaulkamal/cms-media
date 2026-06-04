@@ -26,11 +26,16 @@ describe('AuthService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('login sukses mengembalikan access + refresh token', async () => {
+  it('login sukses mengembalikan token + identitas user', async () => {
     (usersService.verifyCredentials as jest.Mock).mockResolvedValue(user);
-    const tokens = await service.login(user.email, 'password123');
-    expect(tokens.accessToken).toBe('signed-token');
-    expect(tokens.refreshToken).toBe('signed-token');
+    const result = await service.login(user.email, 'password123');
+    expect(result.tokens.accessToken).toBe('signed-token');
+    expect(result.tokens.refreshToken).toBe('signed-token');
+    expect(result.user).toEqual({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
     expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
   });
 

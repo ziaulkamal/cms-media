@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "media" ADD COLUMN     "description" TEXT,
+ADD COLUMN     "title" TEXT;

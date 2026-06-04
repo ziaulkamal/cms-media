@@ -5,18 +5,32 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import {
   AuthenticatedUser,
   JwtPayload,
 } from '../../../common/types/authenticated-user';
+import { ACCESS_TOKEN_COOKIE } from '../../../common/utils/auth-cookies';
+
+/** Ambil access token dari cookie httpOnly; fallback ke header Authorization. */
+function accessTokenFromRequest(req: Request): string | null {
+  return (
+    (req.cookies as Record<string, string> | undefined)?.[
+      ACCESS_TOKEN_COOKIE
+    ] ?? null
+  );
+}
 
 /** Validasi access token via JWT_ACCESS_SECRET; payload -> request.user. */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(config: ConfigService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        accessTokenFromRequest,
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
       ignoreExpiration: false,
       secretOrKey: config.get<string>('jwt.accessSecret') as string,
     });
