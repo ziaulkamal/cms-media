@@ -7,7 +7,10 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // url: koneksi runtime (boleh lewat pooler spt PgBouncer di produksi).
+  url       = env("DATABASE_URL")
+  // directUrl: koneksi langsung (non-pooled) khusus migrate/introspect.
+  directUrl = env("DIRECT_URL")
 }
 
 /// Peran staf redaksi (RBAC). Default-deny: hak ditentukan per-peran.
@@ -32,6 +35,40 @@ enum CommentStatus {
   PENDING
   APPROVED
   SPAM
+}
+
+/// Jenis/sumber materi iklan.
+enum AdCreativeKind {
+  HOUSE_IMAGE // banner manual: gambar + link
+  HOUSE_HTML  // embed HTML custom (hanya non-AMP)
+  ADSENSE     // Google AdSense (client + slot)
+}
+
+/// Lingkungan render iklan: web biasa, AMP, atau keduanya.
+enum AdPlatform {
+  WEB
+  AMP
+  BOTH
+}
+
+/// Status operasional creative iklan.
+enum AdCreativeStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  EXPIRED
+  ARCHIVED
+}
+
+/// Tipe nilai setting (petunjuk render input di frontend).
+enum SettingType {
+  STRING
+  TEXT
+  NUMBER
+  BOOLEAN
+  JSON
+  URL
 }
 
 /// Staf redaksi / pengguna internal sistem.
@@ -101,6 +138,9 @@ model Article {
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
+  // Vektor full-text search; diisi otomatis oleh trigger (lihat migration FTS).
+  tsv Unsupported("tsvector")?
+
   author        User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
   category      Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   featuredMedia Media?       @relation("ArticleFeaturedMedia", fields: [featuredMediaId], references: [id], onDelete: SetNull)
@@ -112,6 +152,7 @@ model Article {
   @@index([status, publishedAt(sort: Desc)])
   @@index([categoryId])
   @@index([authorId])
+  @@index([tsv], type: Gin)
   @@map("articles")
 }
 
@@ -177,4 +218,77 @@ model Comment {
 
   @@index([articleId, status])
   @@map("comments")
+}
+
+/// Posisi iklan bernama (mis. "home_top") + dimensi bidang yang di-reserve.
+model AdSlot {
+  id           String   @id @default(uuid()) @db.Uuid
+  key          String   @unique
+  name         String
+  description  String?
+  width        Int? // lebar bidang (px) yang di-reserve; penting utk AMP & anti-CLS
+  height       Int? // tinggi bidang (px)
+  isAmpEnabled Boolean  @default(false) @map("is_amp_enabled") // tampil di halaman AMP?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  creatives AdCreative[]
+
+  @@map("ad_slots")
+}
+
+/// Materi iklan; field wajib berbeda per kind (HOUSE_IMAGE/HOUSE_HTML/ADSENSE).
+model AdCreative {
+  id       String           @id @default(uuid()) @db.Uuid
+  slotId   String           @map("slot_id") @db.Uuid
+  kind     AdCreativeKind
+  platform AdPlatform       @default(WEB)
+  status   AdCreativeStatus @default(DRAFT)
+  name     String
+
+  // HOUSE_IMAGE
+  imageUrl  String? @map("image_url")
+  targetUrl String? @map("target_url")
+  alt       String?
+
+  // HOUSE_HTML
+  htmlSnippet String? @map("html_snippet")
+
+  // ADSENSE
+  adClient String? @map("ad_client") // ca-pub-xxxxxxxxxxxxxxxx
+  adSlot   String? @map("ad_slot") // id slot numerik
+  adFormat String? @map("ad_format") // mis. "auto" (responsif) atau ukuran tetap
+
+  // Dimensi override (kalau beda dari slot)
+  width  Int?
+  height Int?
+
+  priority  Int       @default(0)
+  startAt   DateTime? @map("start_at")
+  endAt     DateTime? @map("end_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  slot AdSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  // Mendukung query serving: creative per slot, urut status & prioritas.
+  @@index([slotId, status, priority])
+  @@map("ad_creatives")
+}
+
+/// Konfigurasi situs dinamis (key-value); bisa ditambah tanpa migration.
+model Setting {
+  id        String      @id @default(uuid()) @db.Uuid
+  key       String      @unique // mis. "site_title", "site_url"
+  value     Json? // nilai fleksibel (string/number/boolean/object)
+  type      SettingType @default(STRING)
+  group     String      @default("general") // pengelompokan UI: general/seo/social...
+  label     String? // label tampilan opsional
+  isPublic  Boolean     @default(false) @map("is_public") // boleh dibaca publik (SEO/meta)?
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@index([group])
+  @@map("settings")
 }

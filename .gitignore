@@ -26,3 +26,12 @@ npm-debug.log*
 # claude code workspace (jangan dipublish)
 /.claude
 CLAUDE.md
+
+# postman collection (lokal, jangan dipublish)
+postman_collection.json
+*.postman_collection.json
+postman_environment.json
+
+# todos (lokal, jangan dipublish)
+todos.txt
+**/todos.txt

@@ -40,7 +40,7 @@ prisma/
 
 - Node.js >= 20
 - npm >= 10
-- Docker (untuk PostgreSQL lokal) — atau PostgreSQL 16 yang sudah berjalan
+- PostgreSQL 16 — disarankan via **Podman** (ringan, tanpa Docker Desktop). Alternatif: Docker, atau PostgreSQL native.
 
 ## Menjalankan (Development)
 
@@ -52,7 +52,17 @@ npm install
 cp .env.example .env
 # Edit .env: isi JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, dan DATABASE_URL bila perlu
 
-# 3. Jalankan PostgreSQL (Docker)
+# 3. Jalankan PostgreSQL — pilih salah satu:
+
+#  a) Podman (ringan, direkomendasikan)
+podman machine init   # sekali saja
+podman machine start
+podman run -d --name cms_media_postgres \
+  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=cms_media \
+  -p 5432:5432 -v cms_media_pgdata:/var/lib/postgresql/data \
+  docker.io/library/postgres:16-alpine
+
+#  b) Docker (jika sudah terpasang)
 docker compose up -d
 
 # 4. Generate Prisma client & jalankan migration
