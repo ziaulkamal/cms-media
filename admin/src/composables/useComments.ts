@@ -18,6 +18,14 @@ export function useCommentsQuery(params: ComputedRef<ModerationQuery>) {
   });
 }
 
+/** Rekap jumlah komentar per status (untuk header moderasi). */
+export function useCommentStatsQuery() {
+  return useQuery({
+    queryKey: ['comments', 'stats'],
+    queryFn: () => commentsApi.moderationStats(),
+  });
+}
+
 /** Mutasi moderasi; invalidate antrean pada sukses. */
 export function useCommentMutations() {
   const qc = useQueryClient();

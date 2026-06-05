@@ -2,15 +2,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
 import { ApiError } from '@/api/http';
-import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
-import DataTable, { type Column } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Pagination from '@/components/ui/Pagination.vue';
 import QueryState from '@/components/ui/QueryState.vue';
 import SelectInput from '@/components/ui/SelectInput.vue';
 import TextInput from '@/components/ui/TextInput.vue';
+import UserCard from '@/components/users/UserCard.vue';
 import { useUserMutations, useUsersQuery } from '@/composables/useUsers';
 import { useToast } from '@/composables/useToast';
 import { toOptions, userRoleLabel } from '@/lib/labels';
@@ -33,13 +32,9 @@ const form = reactive({
 });
 
 const roleOptions = toOptions(userRoleLabel);
-const columns: Column[] = [
-  { key: 'name', label: 'Nama' },
-  { key: 'email', label: 'Email' },
-  { key: 'role', label: 'Peran' },
-  { key: 'status', label: 'Status' },
-  { key: 'actions', label: '', align: 'right' },
-];
+const subtitle = computed(() =>
+  data.value ? `${data.value.meta.total} akun staf redaksi.` : 'Akun staf redaksi.',
+);
 
 function openCreate(): void {
   editingId.value = null;
@@ -94,7 +89,7 @@ async function onSubmit(): Promise<void> {
 
 <template>
   <div>
-    <PageHeader title="Pengguna" subtitle="Akun staf redaksi.">
+    <PageHeader title="Pengguna" :subtitle="subtitle">
       <template #actions>
         <Button @click="openCreate">User Baru</Button>
       </template>
@@ -106,21 +101,16 @@ async function onSubmit(): Promise<void> {
       :is-empty="!data || data.items.length === 0"
       empty-text="Belum ada user."
     >
-      <DataTable :columns="columns" :rows="data!.items" :row-key="(u) => u.id">
-        <template #cell-role="{ row }">
-          <Badge variant="primary">{{ userRoleLabel[row.role] }}</Badge>
-        </template>
-        <template #cell-status="{ row }">
-          <Badge :variant="row.isActive ? 'success' : 'neutral'">
-            {{ row.isActive ? 'Aktif' : 'Nonaktif' }}
-          </Badge>
-        </template>
-        <template #cell-actions="{ row }">
-          <Button size="sm" variant="secondary" @click="openEdit(row)">Edit</Button>
-        </template>
-      </DataTable>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <UserCard
+          v-for="user in data!.items"
+          :key="user.id"
+          :user="user"
+          @edit="openEdit(user)"
+        />
+      </div>
 
-      <div class="mt-4">
+      <div class="mt-6">
         <Pagination
           :page="data!.meta.page"
           :per-page="data!.meta.perPage"

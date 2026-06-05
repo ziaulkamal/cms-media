@@ -13,6 +13,7 @@ import { Paginated } from '../../common/interceptors/response.interceptor';
 import { CommentsRepository } from './comments.repository';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import {
+  CommentModerationStats,
   CommentModerationView,
   CommentView,
   toCommentModerationView,
@@ -69,6 +70,17 @@ export class CommentsService {
       filter.page,
       filter.perPage,
     );
+  }
+
+  /** Rekap jumlah komentar per status untuk header moderasi. */
+  async moderationStats(): Promise<CommentModerationStats> {
+    const rows = await this.repo.countByStatus();
+    const count = (s: CommentStatus) =>
+      rows.find((r) => r.status === s)?.count ?? 0;
+    const pending = count(CommentStatus.PENDING);
+    const approved = count(CommentStatus.APPROVED);
+    const spam = count(CommentStatus.SPAM);
+    return { total: pending + approved + spam, pending, approved, spam };
   }
 
   /** Setujui komentar (tampil ke publik). */

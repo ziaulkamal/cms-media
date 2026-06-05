@@ -89,6 +89,13 @@ export const userRoleLabel: Record<UserRole, string> = {
   CONTRIBUTOR: 'Kontributor',
 };
 
+export const userRoleVariant: Record<UserRole, BadgeVariant> = {
+  ADMIN: 'primary',
+  EDITOR: 'info',
+  AUTHOR: 'success',
+  CONTRIBUTOR: 'neutral',
+};
+
 export const settingTypeLabel: Record<SettingType, string> = {
   STRING: 'Teks singkat',
   TEXT: 'Teks panjang',

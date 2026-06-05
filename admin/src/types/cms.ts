@@ -194,6 +194,13 @@ export interface Article {
   featuredMedia: ArticleFeaturedMedia | null;
 }
 
+/** Ringkasan artikel asal komentar. */
+export interface CommentArticleRef {
+  id: string;
+  title: string;
+  slug: string;
+}
+
 /** Komentar untuk panel moderasi. */
 export interface CommentModeration {
   id: string;
@@ -203,6 +210,15 @@ export interface CommentModeration {
   body: string;
   status: CommentStatus;
   createdAt: string;
+  article: CommentArticleRef | null;
+}
+
+/** Rekap jumlah komentar per status (header moderasi). */
+export interface CommentModerationStats {
+  total: number;
+  pending: number;
+  approved: number;
+  spam: number;
 }
 
 /** Slot iklan (posisi bernama). */

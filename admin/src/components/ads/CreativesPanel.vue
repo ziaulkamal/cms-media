@@ -1,13 +1,13 @@
-<!-- admin/src/pages/ads/Creatives.vue — kelola creative per slot (form kondisional per kind). -->
+<!-- admin/src/components/ads/CreativesPanel.vue — kelola creative per slot (form kondisional per kind). -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { Plus } from 'lucide-vue-next';
 import { ApiError } from '@/api/http';
 import CreativeForm from '@/components/ads/CreativeForm.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
 import DataTable, { type Column } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';
-import PageHeader from '@/components/ui/PageHeader.vue';
 import QueryState from '@/components/ui/QueryState.vue';
 import SelectInput from '@/components/ui/SelectInput.vue';
 import {
@@ -83,20 +83,26 @@ async function onSubmit(payload: CreateAdCreativePayload): Promise<void> {
 
 <template>
   <div>
-    <PageHeader title="Creative Iklan" subtitle="Materi iklan per slot.">
-      <template #actions>
-        <Button :disabled="!slotId" @click="openCreate">Creative Baru</Button>
-      </template>
-    </PageHeader>
-
-    <div class="mb-4 max-w-sm">
-      <SelectInput
-        v-model="slotId"
-        label="Slot"
-        :allow-empty="false"
-        :options="slotOptions"
-        :placeholder="slotsLoading ? 'Memuat slot…' : 'Pilih slot'"
-      />
+    <div class="mb-4 flex items-end justify-between gap-3">
+      <div class="flex flex-1 flex-wrap items-end gap-x-4 gap-y-2">
+        <div>
+          <h2 class="text-text-primary text-base font-semibold">Creative Iklan</h2>
+          <p class="text-text-subtle text-sm">Materi iklan per slot.</p>
+        </div>
+        <div class="w-full max-w-xs">
+          <SelectInput
+            v-model="slotId"
+            label="Slot"
+            :allow-empty="false"
+            :options="slotOptions"
+            :placeholder="slotsLoading ? 'Memuat slot…' : 'Pilih slot'"
+          />
+        </div>
+      </div>
+      <Button size="sm" :disabled="!slotId" @click="openCreate">
+        <Plus class="h-4 w-4" />
+        Creative Baru
+      </Button>
     </div>
 
     <QueryState

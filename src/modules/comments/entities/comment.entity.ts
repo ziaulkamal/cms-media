@@ -12,6 +12,13 @@ export interface CommentView {
   createdAt: Date;
 }
 
+/** Ringkasan artikel asal komentar (untuk panel moderasi). */
+export interface CommentArticleRef {
+  id: string;
+  title: string;
+  slug: string;
+}
+
 /** Komentar lengkap untuk panel moderasi. */
 export interface CommentModerationView {
   id: string;
@@ -21,7 +28,19 @@ export interface CommentModerationView {
   body: string;
   status: string;
   createdAt: Date;
+  article: CommentArticleRef | null;
 }
+
+/** Rekap jumlah komentar per status untuk header moderasi. */
+export interface CommentModerationStats {
+  total: number;
+  pending: number;
+  approved: number;
+  spam: number;
+}
+
+/** Comment opsional dengan relasi article ter-include (input mapper moderasi). */
+type CommentWithArticle = Comment & { article?: CommentArticleRef | null };
 
 /** Petakan ke bentuk publik. */
 export function toCommentView(c: Comment): CommentView {
@@ -33,8 +52,10 @@ export function toCommentView(c: Comment): CommentView {
   };
 }
 
-/** Petakan ke bentuk moderasi (lengkap dengan status). */
-export function toCommentModerationView(c: Comment): CommentModerationView {
+/** Petakan ke bentuk moderasi (lengkap dengan status & artikel asal). */
+export function toCommentModerationView(
+  c: CommentWithArticle,
+): CommentModerationView {
   return {
     id: c.id,
     articleId: c.articleId,
@@ -43,5 +64,6 @@ export function toCommentModerationView(c: Comment): CommentModerationView {
     body: c.body,
     status: c.status,
     createdAt: c.createdAt,
+    article: c.article ?? null,
   };
 }

@@ -11,6 +11,11 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
+/** Comment beserta ringkasan artikel asal (hasil query moderasi). */
+export type CommentWithArticle = Prisma.CommentGetPayload<{
+  include: { article: { select: { id: true; title: true; slug: true } } };
+}>;
+
 /** Repository Comment: pembungkus query Prisma untuk komentar & moderasi. */
 @Injectable()
 export class CommentsRepository {
@@ -58,12 +63,12 @@ export class CommentsRepository {
     ]);
   }
 
-  /** Daftar komentar untuk moderasi dengan filter status & artikel opsional. */
+  /** Daftar komentar untuk moderasi (dengan artikel asal) + filter opsional. */
   async paginateForModeration(
     filter: { status?: CommentStatus; articleId?: string },
     skip: number,
     take: number,
-  ): Promise<[Comment[], number]> {
+  ): Promise<[CommentWithArticle[], number]> {
     const where: Prisma.CommentWhereInput = {
       status: filter.status,
       articleId: filter.articleId,
@@ -71,11 +76,23 @@ export class CommentsRepository {
     return this.prisma.$transaction([
       this.prisma.comment.findMany({
         where,
+        include: {
+          article: { select: { id: true, title: true, slug: true } },
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take,
       }),
       this.prisma.comment.count({ where }),
     ]);
+  }
+
+  /** Rekap jumlah komentar per status (untuk ringkasan moderasi). */
+  async countByStatus(): Promise<Array<{ status: CommentStatus; count: number }>> {
+    const rows = await this.prisma.comment.groupBy({
+      by: ['status'],
+      _count: { _all: true },
+    });
+    return rows.map((r) => ({ status: r.status, count: r._count._all }));
   }
 }

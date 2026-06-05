@@ -1,12 +1,12 @@
-<!-- admin/src/pages/ads/Slots.vue — kelola slot iklan (posisi bernama, dimensi, AMP, aktif). -->
+<!-- admin/src/components/ads/SlotsPanel.vue — kelola slot iklan (posisi bernama, dimensi, AMP, aktif). -->
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
+import { Plus } from 'lucide-vue-next';
 import { ApiError } from '@/api/http';
 import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
 import DataTable, { type Column } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';
-import PageHeader from '@/components/ui/PageHeader.vue';
 import QueryState from '@/components/ui/QueryState.vue';
 import TextInput from '@/components/ui/TextInput.vue';
 import { useAdSlotMutations, useAdSlotsQuery } from '@/composables/useAds';
@@ -99,11 +99,16 @@ async function onSubmit(): Promise<void> {
 
 <template>
   <div>
-    <PageHeader title="Slot Iklan" subtitle="Posisi iklan bernama pada situs.">
-      <template #actions>
-        <Button @click="openCreate">Slot Baru</Button>
-      </template>
-    </PageHeader>
+    <div class="mb-4 flex items-center justify-between gap-3">
+      <div>
+        <h2 class="text-text-primary text-base font-semibold">Slot Iklan</h2>
+        <p class="text-text-subtle text-sm">Posisi iklan bernama pada situs.</p>
+      </div>
+      <Button size="sm" @click="openCreate">
+        <Plus class="h-4 w-4" />
+        Slot Baru
+      </Button>
+    </div>
 
     <QueryState
       :loading="isLoading"

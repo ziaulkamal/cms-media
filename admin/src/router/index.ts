@@ -101,17 +101,14 @@ const router = createRouter({
           meta: { roles: ['ADMIN', 'EDITOR'] },
         },
         {
-          path: 'ads/slots',
-          name: 'ad-slots',
-          component: () => import('@/pages/ads/Slots.vue'),
+          path: 'ads',
+          name: 'ads',
+          component: () => import('@/pages/ads/Index.vue'),
           meta: { roles: ['ADMIN', 'EDITOR'] },
         },
-        {
-          path: 'ads/creatives',
-          name: 'ad-creatives',
-          component: () => import('@/pages/ads/Creatives.vue'),
-          meta: { roles: ['ADMIN', 'EDITOR'] },
-        },
+        // Redirect path lama agar bookmark/tautan lama tetap berfungsi.
+        { path: 'ads/slots', redirect: { name: 'ads' } },
+        { path: 'ads/creatives', redirect: { name: 'ads' } },
         {
           path: 'admin/users',
           name: 'users',

@@ -4,6 +4,8 @@ import { computed, reactive, ref, watch } from 'vue';
 import { Trash2 } from 'lucide-vue-next';
 import { ApiError } from '@/api/http';
 import SettingField from '@/components/settings/SettingField.vue';
+import SettingsGuide from '@/components/settings/SettingsGuide.vue';
+import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import Modal from '@/components/ui/Modal.vue';
@@ -127,52 +129,65 @@ async function onAdd(): Promise<void> {
       :is-empty="!data || data.length === 0"
       empty-text="Belum ada setting. Tambahkan yang pertama."
     >
-      <div class="border-border mb-4 flex gap-1 border-b">
-        <button
-          v-for="g in groups"
-          :key="g"
-          type="button"
-          class="-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors"
-          :class="
-            activeGroup === g
-              ? 'border-primary text-primary'
-              : 'text-text-muted border-transparent hover:text-text-primary'
-          "
-          @click="activeGroup = g"
-        >
-          {{ g }}
-        </button>
-      </div>
-
-      <Card>
-        <div class="flex flex-col gap-5">
-          <div
-            v-for="s in groupSettings"
-            :key="s.key"
-            class="border-border flex items-start gap-3 border-b pb-5 last:border-0 last:pb-0"
-          >
-            <div class="flex-1">
-              <SettingField
-                v-model="values[s.key]"
-                :type="s.type"
-                :label="s.label || s.key"
-              />
-              <p class="text-text-subtle mt-1 text-xs">
-                <code>{{ s.key }}</code> · {{ settingTypeLabel[s.type] }}
-                <span v-if="s.isPublic"> · publik</span>
-              </p>
-            </div>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Kolom kiri: editor setting -->
+        <div class="lg:col-span-2">
+          <div class="bg-bg-subtle mb-4 inline-flex flex-wrap gap-1 rounded-xl p-1">
             <button
+              v-for="g in groups"
+              :key="g"
               type="button"
-              class="text-text-subtle hover:text-danger mt-1"
-              aria-label="Hapus setting"
-              @click="onRemove(s.key)"
+              class="rounded-lg px-3.5 py-1.5 text-sm font-medium capitalize transition-colors"
+              :class="
+                activeGroup === g
+                  ? 'bg-surface text-primary shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
+              "
+              @click="activeGroup = g"
             >
-              <Trash2 class="h-4 w-4" />
+              {{ g }}
             </button>
           </div>
+
+          <Card>
+            <div class="flex flex-col gap-5">
+              <div
+                v-for="s in groupSettings"
+                :key="s.key"
+                class="border-border flex items-start gap-3 border-b pb-5 last:border-0 last:pb-0"
+              >
+                <div class="flex-1">
+                  <SettingField
+                    v-model="values[s.key]"
+                    :type="s.type"
+                    :label="s.label || s.key"
+                  />
+                  <p class="text-text-subtle mt-1 flex items-center gap-1.5 text-xs">
+                    <code>{{ s.key }}</code>
+                    <span>· {{ settingTypeLabel[s.type] }}</span>
+                    <Badge v-if="s.isPublic" variant="info">publik</Badge>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="text-text-subtle hover:text-danger mt-1"
+                  aria-label="Hapus setting"
+                  @click="onRemove(s.key)"
+                >
+                  <Trash2 class="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </Card>
         </div>
-      </Card>
+
+        <!-- Kolom kanan: panduan accordion (sticky) -->
+        <aside class="lg:col-span-1">
+          <div class="lg:sticky lg:top-6">
+            <SettingsGuide />
+          </div>
+        </aside>
+      </div>
     </QueryState>
 
     <Modal v-model:open="addOpen" title="Tambah Setting">

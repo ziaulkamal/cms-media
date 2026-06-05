@@ -55,6 +55,13 @@ export class CommentsController {
     });
   }
 
+  /** Rekap jumlah komentar per status (editor ke atas). */
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Get('moderation/stats')
+  moderationStats() {
+    return this.comments.moderationStats();
+  }
+
   /** Setujui komentar. */
   @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @Patch(':id/approve')

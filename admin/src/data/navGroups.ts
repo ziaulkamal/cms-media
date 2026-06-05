@@ -10,7 +10,6 @@ import {
   Megaphone,
   MessageSquare,
   Newspaper,
-  RectangleHorizontal,
   Settings,
   Tags,
   Users,
@@ -59,8 +58,7 @@ export const navGroups: NavGroup[] = [
   {
     label: 'Monetisasi',
     items: [
-      { label: 'Slot Iklan', to: '/ads/slots', icon: RectangleHorizontal, roles: EDITOR_UP },
-      { label: 'Creative', to: '/ads/creatives', icon: Megaphone, roles: EDITOR_UP },
+      { label: 'Iklan', to: '/ads', icon: Megaphone, roles: EDITOR_UP },
     ],
   },
   {

@@ -1,6 +1,7 @@
 /** admin/src/api/comments.ts — endpoint moderasi komentar (editor ke atas). */
 import type {
   CommentModeration,
+  CommentModerationStats,
   ModerationQuery,
   SuccessEnvelope,
 } from '@/types/cms';
@@ -13,6 +14,14 @@ export const commentsApi = {
       http.get<SuccessEnvelope<CommentModeration[]>>('/comments/moderation', {
         params: query,
       }),
+    ),
+
+  /** Rekap jumlah komentar per status. */
+  moderationStats: () =>
+    unwrap<CommentModerationStats>(
+      http.get<SuccessEnvelope<CommentModerationStats>>(
+        '/comments/moderation/stats',
+      ),
     ),
 
   approve: (id: string) =>
