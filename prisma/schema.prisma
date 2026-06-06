@@ -210,6 +210,7 @@ model Media {
   featuredInArticles Article[] @relation("ArticleFeaturedMedia")
   galleryPhotos      GalleryPhoto[] @relation("PhotoMedia")
   coverForAlbums     GalleryAlbum[] @relation("AlbumCover")
+  venueContents      VenueContent[] @relation("VenueImage")
 
   @@index([uploadedById])
   @@map("media")
@@ -381,6 +382,39 @@ model GalleryPhoto {
   @@index([albumId, sortOrder])
   @@index([isPublished])
   @@map("gallery_photos")
+}
+
+/// Kanal siaran langsung (YouTube). Master saklar global ada di Setting streaming_enabled.
+model LiveStream {
+  id          String   @id @default(uuid()) @db.Uuid
+  youtubeId   String   @map("youtube_id")
+  sportName   String?  @map("sport_name")
+  matchRef    String?  @map("match_ref") // referensi pertandingan simpora2026 (opsional)
+  title       String
+  venueName   String?  @map("venue_name")
+  viewerCount Int      @default(0) @map("viewer_count")
+  isLive      Boolean  @default(false) @map("is_live")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isLive, sortOrder])
+  @@map("live_streams")
+}
+
+/// Konten pengayaan venue (deskripsi & foto); data inti venue tetap milik simpora2026.
+model VenueContent {
+  id           String   @id @default(uuid()) @db.Uuid
+  venueRef     String   @unique @map("venue_ref") // id/slug venue di simpora2026
+  description  String
+  imageMediaId String?  @map("image_media_id") @db.Uuid
+  gallery      Json? // daftar mediaId/url tambahan (opsional)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  imageMedia Media? @relation("VenueImage", fields: [imageMediaId], references: [id], onDelete: SetNull)
+
+  @@map("venue_content")
 }
 
 /// Pesan kontak dari pembaca (inbox redaksi) + jejak teknis untuk anti-spam.

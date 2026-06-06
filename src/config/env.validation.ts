@@ -17,6 +17,7 @@ export const envValidationSchema = Joi.object({
   CORS_ORIGINS: Joi.string().default(
     'http://localhost:3001,http://localhost:5173',
   ),
+  SIMPORA_API_URL: Joi.string().uri().default('http://localhost:8000/api'),
 
   DATABASE_URL: Joi.string().uri({ scheme: ['postgresql', 'postgres'] }).required(),
   DIRECT_URL: Joi.string()

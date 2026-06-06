@@ -25,6 +25,8 @@ import { PagesModule } from './modules/pages/pages.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
 import { ContactModule } from './modules/contact/contact.module';
+import { LiveStreamsModule } from './modules/live-streams/live-streams.module';
+import { VenueContentModule } from './modules/venue-content/venue-content.module';
 
 @Module({
   imports: [
@@ -56,6 +58,8 @@ import { ContactModule } from './modules/contact/contact.module';
     SettingsModule,
     GalleryModule,
     ContactModule,
+    LiveStreamsModule,
+    VenueContentModule,
   ],
   providers: [
     // Urutan penting: rate-limit -> CSRF -> autentikasi -> otorisasi (RBAC).

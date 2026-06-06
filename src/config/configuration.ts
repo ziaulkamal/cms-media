@@ -12,6 +12,8 @@ export interface AppConfig {
   apiPrefix: string;
   apiVersion: string;
   corsOrigins: string[];
+  /** Base URL API publik simpora2026 (server-to-server; venue & skor). */
+  simporaApiUrl: string;
   jwt: {
     accessSecret: string;
     accessTtl: string;
@@ -46,6 +48,9 @@ export default (): AppConfig => ({
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean),
+  simporaApiUrl: (
+    process.env.SIMPORA_API_URL ?? 'http://localhost:8000/api'
+  ).replace(/\/+$/, ''),
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET as string,
     accessTtl: process.env.JWT_ACCESS_TTL ?? '900s',
