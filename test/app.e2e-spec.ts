@@ -58,12 +58,15 @@ describe('API (e2e)', () => {
     expect(res.body.success).toBe(false);
   });
 
-  it('POST /api/v1/auth/login (admin seed) -> token', async () => {
+  it('POST /api/v1/auth/login (admin seed) -> set cookie httpOnly + data user', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'admin@cms-media.local', password: 'Admin12345!' });
     expect(res.status).toBe(200);
-    expect(res.body.data.accessToken).toBeTruthy();
-    expect(res.body.data.refreshToken).toBeTruthy();
+    // Auth berbasis cookie httpOnly: token ada di Set-Cookie, bukan di body.
+    const cookies = res.headers['set-cookie'] as unknown as string[];
+    expect(cookies.some((c) => c.startsWith('access_token='))).toBe(true);
+    expect(cookies.some((c) => c.startsWith('refresh_token='))).toBe(true);
+    expect(res.body.data.email).toBe('admin@cms-media.local');
   });
 });

@@ -17,6 +17,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 @Injectable()
 export class CsrfGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
+    if (context.getType() !== 'http') return true;
     const req = context.switchToHttp().getRequest<Request>();
 
     if (SAFE_METHODS.has(req.method)) return true;

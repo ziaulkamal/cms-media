@@ -8,6 +8,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '../../common/errors/domain-error';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { SettingsRepository } from './settings.repository';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
 import {
@@ -20,9 +21,15 @@ import {
 const KEY_PATTERN = /^[a-z0-9_]+$/;
 
 /** Service Setting: konfigurasi situs dinamis (key-value). */
+/** Key master saklar siaran; perubahannya disiarkan via gateway realtime. */
+const STREAMING_KEY = 'streaming_enabled';
+
 @Injectable()
 export class SettingsService {
-  constructor(private readonly repo: SettingsRepository) {}
+  constructor(
+    private readonly repo: SettingsRepository,
+    private readonly gateway: RealtimeGateway,
+  ) {}
 
   /** Map { key: value } untuk setting publik (SEO/meta) — dikonsumsi frontend. */
   async getPublicMap(): Promise<Record<string, unknown>> {
@@ -67,6 +74,9 @@ export class SettingsService {
         isPublic: dto.isPublic,
       },
     );
+    if (key === STREAMING_KEY) {
+      this.gateway.emitStreamingToggled(dto.value === true);
+    }
     return toSettingView(setting);
   }
 
@@ -86,6 +96,9 @@ export class SettingsService {
     await this.repo.updateValues(
       keys.map((key) => ({ key, value: values[key] as Prisma.InputJsonValue })),
     );
+    if (STREAMING_KEY in values) {
+      this.gateway.emitStreamingToggled(values[STREAMING_KEY] === true);
+    }
     return { updated: keys.length };
   }
 

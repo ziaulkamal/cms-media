@@ -4,8 +4,10 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { WsAwareThrottlerGuard } from './common/guards/ws-aware-throttler.guard';
+import { PublicCacheInterceptor } from './common/interceptors/public-cache.interceptor';
 import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
 import { CsrfGuard } from './common/guards/csrf.guard';
@@ -27,6 +29,7 @@ import { GalleryModule } from './modules/gallery/gallery.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { LiveStreamsModule } from './modules/live-streams/live-streams.module';
 import { VenueContentModule } from './modules/venue-content/venue-content.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 
 @Module({
   imports: [
@@ -60,13 +63,15 @@ import { VenueContentModule } from './modules/venue-content/venue-content.module
     ContactModule,
     LiveStreamsModule,
     VenueContentModule,
+    RealtimeModule,
   ],
   providers: [
     // Urutan penting: rate-limit -> CSRF -> autentikasi -> otorisasi (RBAC).
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: WsAwareThrottlerGuard },
     { provide: APP_GUARD, useClass: CsrfGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_INTERCEPTOR, useClass: PublicCacheInterceptor },
   ],
 })
 export class AppModule {}

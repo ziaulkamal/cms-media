@@ -12,6 +12,7 @@ import { RolesGuard } from './roles.guard';
 /** Bangun ExecutionContext palsu dengan user tertentu pada request. */
 function contextWithUser(user?: AuthenticatedUser): ExecutionContext {
   return {
+    getType: () => 'http',
     getHandler: () => undefined,
     getClass: () => undefined,
     switchToHttp: () => ({ getRequest: () => ({ user }) }),

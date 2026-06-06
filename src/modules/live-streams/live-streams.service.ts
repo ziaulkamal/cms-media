@@ -9,6 +9,7 @@ import {
   ValidationError,
 } from '../../common/errors/domain-error';
 import { extractYoutubeId } from '../../common/utils/youtube';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { CreateLiveStreamDto } from './dto/create-live-stream.dto';
 import { UpdateLiveStreamDto } from './dto/update-live-stream.dto';
 import {
@@ -28,7 +29,10 @@ export interface LiveStreamServing {
 /** Service LiveStream: orkestrasi kanal siaran langsung. */
 @Injectable()
 export class LiveStreamsService {
-  constructor(private readonly repo: LiveStreamsRepository) {}
+  constructor(
+    private readonly repo: LiveStreamsRepository,
+    private readonly gateway: RealtimeGateway,
+  ) {}
 
   /** Serving publik: master saklar (dari Setting) + daftar kanal. */
   async serve(): Promise<LiveStreamServing> {
@@ -59,6 +63,7 @@ export class LiveStreamsService {
       sortOrder: dto.sortOrder ?? 0,
       isLive: dto.isLive ?? false,
     });
+    this.gateway.emitStreamUpdated();
     return toLiveStreamView(created);
   }
 
@@ -74,6 +79,7 @@ export class LiveStreamsService {
       sortOrder: dto.sortOrder,
       isLive: dto.isLive,
     });
+    this.gateway.emitStreamUpdated();
     return toLiveStreamView(updated);
   }
 
@@ -81,13 +87,16 @@ export class LiveStreamsService {
   async toggle(id: string): Promise<LiveStreamView> {
     const current = await this.getOrFail(id);
     const updated = await this.repo.update(id, { isLive: !current.isLive });
+    this.gateway.emitStreamUpdated();
     return toLiveStreamView(updated);
   }
 
   /** Hapus kanal. */
   async remove(id: string): Promise<{ id: string }> {
     await this.getOrFail(id);
-    return this.repo.delete(id);
+    const result = await this.repo.delete(id);
+    this.gateway.emitStreamUpdated();
+    return result;
   }
 
   /** Validasi & ubah URL/id YouTube menjadi video id; lempar bila tak valid. */

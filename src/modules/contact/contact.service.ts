@@ -7,6 +7,7 @@ import { ContactMessage, ContactStatus } from '@prisma/client';
 import { paginate } from '../../common/dto/paginated';
 import { NotFoundError } from '../../common/errors/domain-error';
 import { Paginated } from '../../common/interceptors/response.interceptor';
+import { sanitizeText } from '../../common/utils/sanitize';
 import { ContactQueryDto } from './dto/contact-query.dto';
 import { CreateContactDto } from './dto/create-contact.dto';
 import {
@@ -36,10 +37,10 @@ export class ContactService {
   ): Promise<{ received: true }> {
     const isBot = Boolean(dto.website && dto.website.trim().length > 0);
     await this.repo.create({
-      name: dto.name,
+      name: sanitizeText(dto.name),
       email: dto.email,
-      subject: dto.subject,
-      message: dto.message,
+      subject: sanitizeText(dto.subject),
+      message: sanitizeText(dto.message),
       status: isBot ? ContactStatus.SPAM : ContactStatus.NEW,
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,

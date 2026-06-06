@@ -10,6 +10,7 @@ import {
   ValidationError,
 } from '../../common/errors/domain-error';
 import { Paginated } from '../../common/interceptors/response.interceptor';
+import { sanitizeText } from '../../common/utils/sanitize';
 import { CommentsRepository } from './comments.repository';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreatePublicCommentDto } from './dto/create-public-comment.dto';
@@ -37,8 +38,8 @@ export class CommentsService {
     }
     const comment = await this.repo.create({
       article: { connect: { id: dto.articleId } },
-      authorName: dto.authorName,
-      body: dto.body,
+      authorName: sanitizeText(dto.authorName),
+      body: sanitizeText(dto.body),
       status: CommentStatus.PENDING,
     });
     return toCommentModerationView(comment);
@@ -69,9 +70,9 @@ export class CommentsService {
     const comment = await this.repo.create({
       article: { connect: { id: articleId } },
       parent: dto.parentId ? { connect: { id: dto.parentId } } : undefined,
-      authorName: dto.authorName,
+      authorName: sanitizeText(dto.authorName),
       authorEmail: dto.authorEmail,
-      body: dto.body,
+      body: sanitizeText(dto.body),
       status: CommentStatus.PENDING,
     });
     return toCommentModerationView(comment);

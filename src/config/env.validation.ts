@@ -18,6 +18,7 @@ export const envValidationSchema = Joi.object({
     'http://localhost:3001,http://localhost:5173',
   ),
   SIMPORA_API_URL: Joi.string().uri().default('http://localhost:8000/api'),
+  SIMPORA_POLL_MS: Joi.number().integer().min(1000).default(4000),
 
   DATABASE_URL: Joi.string().uri({ scheme: ['postgresql', 'postgres'] }).required(),
   DIRECT_URL: Joi.string()
