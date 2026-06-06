@@ -30,6 +30,7 @@ import { ContactModule } from './modules/contact/contact.module';
 import { LiveStreamsModule } from './modules/live-streams/live-streams.module';
 import { VenueContentModule } from './modules/venue-content/venue-content.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { MenusModule } from './modules/menus/menus.module';
 import { DevModule } from './modules/dev/dev.module';
 
 @Module({
@@ -65,6 +66,7 @@ import { DevModule } from './modules/dev/dev.module';
     LiveStreamsModule,
     VenueContentModule,
     RealtimeModule,
+    MenusModule,
     DevModule,
   ],
   providers: [

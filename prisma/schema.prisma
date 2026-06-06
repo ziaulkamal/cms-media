@@ -438,3 +438,42 @@ model ContactMessage {
   @@index([status, createdAt(sort: Desc)])
   @@map("contact_messages")
 }
+
+/// Lokasi menu di WEB publik.
+enum MenuLocation {
+  MAIN
+  FOOTER
+  FOOTER_BOTTOM
+}
+
+/// Jenis tautan item menu (cara WEB merender & menavigasi).
+enum MenuLinkType {
+  ANCHOR // gulir ke section landing (mis. "beranda")
+  ROUTE // rute internal SPA (mis. "/galeri")
+  EXTERNAL // URL/tel/mailto eksternal
+}
+
+/// Item menu yang dikelola via CMS; FOOTER mendukung 2 level (kolom -> item).
+model MenuItem {
+  id           String       @id @default(uuid()) @db.Uuid
+  location     MenuLocation
+  parentId     String?      @map("parent_id") @db.Uuid
+  label        String
+  type         MenuLinkType @default(ROUTE)
+  // Nilai tautan; null untuk judul kolom footer (heading tanpa link).
+  url          String?
+  openInNewTab Boolean      @default(false) @map("open_in_new_tab")
+  // Urutan tampil antar-saudara (diatur via drag-and-drop).
+  position     Int          @default(0)
+  // Sembunyikan dari WEB tanpa menghapus.
+  isVisible    Boolean      @default(true) @map("is_visible")
+
+  parent   MenuItem?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children MenuItem[] @relation("MenuTree")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([location, parentId, position])
+  @@map("menu_items")
+}

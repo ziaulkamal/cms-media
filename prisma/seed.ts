@@ -9,6 +9,8 @@ import {
   AdPlatform,
   ArticleStatus,
   CommentStatus,
+  MenuLinkType,
+  MenuLocation,
   PageStatus,
   Prisma,
   PrismaClient,
@@ -338,6 +340,102 @@ async function backfillDefaultCategory(): Promise<void> {
   if (count > 0) console.log(`✓ ${count} artikel tanpa kategori dipindah ke "article".`);
 }
 
+/** Menu WEB (Main, Footer berjenjang, Bawah Footer) dari nama yang sudah ada. */
+async function seedMenus(): Promise<void> {
+  type Leaf = {
+    label: string;
+    type: MenuLinkType;
+    url?: string | null;
+    openInNewTab?: boolean;
+  };
+
+  /** Buat item bila belum ada (idempoten by location+parentId+label). */
+  async function ensure(
+    location: MenuLocation,
+    parentId: string | null,
+    position: number,
+    item: Leaf,
+  ): Promise<string> {
+    const found = await prisma.menuItem.findFirst({
+      where: { location, parentId, label: item.label },
+      select: { id: true },
+    });
+    if (found) return found.id;
+    const created = await prisma.menuItem.create({
+      data: {
+        location,
+        parentId,
+        position,
+        label: item.label,
+        type: item.type,
+        url: item.url ?? null,
+        openInNewTab: item.openInNewTab ?? false,
+      },
+      select: { id: true },
+    });
+    return created.id;
+  }
+
+  // MAIN (Navbar)
+  const main: Leaf[] = [
+    { label: 'Beranda', type: MenuLinkType.ANCHOR, url: 'beranda' },
+    { label: 'Tentang', type: MenuLinkType.ANCHOR, url: 'tentang' },
+    { label: 'Jadwal', type: MenuLinkType.ANCHOR, url: 'jadwal' },
+    { label: 'Klasemen', type: MenuLinkType.ANCHOR, url: 'klasemen' },
+    { label: 'Venue', type: MenuLinkType.ANCHOR, url: 'venue' },
+    { label: 'Berita', type: MenuLinkType.ANCHOR, url: 'berita' },
+    { label: 'Galeri', type: MenuLinkType.ROUTE, url: '/galeri' },
+  ];
+  for (const [i, item] of main.entries()) {
+    await ensure(MenuLocation.MAIN, null, i, item);
+  }
+
+  // FOOTER (berjenjang: kolom -> item). Kolom = heading tanpa url.
+  const footer: Array<{ heading: string; items: Leaf[] }> = [
+    {
+      heading: 'Event',
+      items: [
+        { label: 'Tentang PORA', type: MenuLinkType.ANCHOR, url: 'tentang' },
+        { label: 'Cabang Olahraga', type: MenuLinkType.ANCHOR, url: 'cabor' },
+        { label: 'Jadwal', type: MenuLinkType.ANCHOR, url: 'jadwal' },
+        { label: 'Klasemen', type: MenuLinkType.ROUTE, url: '/klasemen' },
+      ],
+    },
+    {
+      heading: 'Informasi',
+      items: [
+        { label: 'Venue & Arena', type: MenuLinkType.ROUTE, url: '/venue' },
+        { label: 'Berita', type: MenuLinkType.ROUTE, url: '/berita' },
+        { label: 'Live Skor', type: MenuLinkType.ROUTE, url: '/live' },
+        { label: 'Galeri', type: MenuLinkType.ROUTE, url: '/galeri' },
+      ],
+    },
+  ];
+  for (const [ci, col] of footer.entries()) {
+    const colId = await ensure(MenuLocation.FOOTER, null, ci, {
+      label: col.heading,
+      type: MenuLinkType.ROUTE,
+      url: null,
+    });
+    for (const [ii, item] of col.items.entries()) {
+      await ensure(MenuLocation.FOOTER, colId, ii, item);
+    }
+  }
+
+  // FOOTER_BOTTOM (bar legal di bawah footer)
+  const bottom: Leaf[] = [
+    { label: 'Kontak', type: MenuLinkType.ROUTE, url: '/kontak' },
+    { label: 'Syarat & Ketentuan', type: MenuLinkType.ROUTE, url: '/syarat-ketentuan' },
+    { label: 'Kebijakan Cookie', type: MenuLinkType.ROUTE, url: '/kebijakan-cookie' },
+    { label: 'Peta Situs', type: MenuLinkType.ROUTE, url: '/sitemap' },
+  ];
+  for (const [i, item] of bottom.entries()) {
+    await ensure(MenuLocation.FOOTER_BOTTOM, null, i, item);
+  }
+
+  console.log('✓ Menu (Main + Footer berjenjang + Bawah Footer) siap.');
+}
+
 async function main(): Promise<void> {
   await seedUsers();
   await seedCategories();
@@ -348,6 +446,7 @@ async function main(): Promise<void> {
   await seedAds();
   await seedSettings();
   await seedPages();
+  await seedMenus();
   console.log('\nSeed selesai. Login admin: lihat SEED_ADMIN_* di .env.');
 }
 

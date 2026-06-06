@@ -125,6 +125,30 @@ const router = createRouter({
           meta: { roles: ['ADMIN', 'EDITOR'] },
         },
         {
+          path: 'menus',
+          name: 'menus',
+          component: () => import('@/pages/menus/Index.vue'),
+          meta: { roles: ['ADMIN', 'EDITOR'] },
+        },
+        {
+          path: 'branding',
+          name: 'branding',
+          component: () => import('@/pages/branding/Index.vue'),
+          meta: { roles: ['ADMIN'] },
+        },
+        {
+          path: 'footer-settings',
+          name: 'footer-settings',
+          component: () => import('@/pages/footer-settings/Index.vue'),
+          meta: { roles: ['ADMIN'] },
+        },
+        {
+          path: 'social',
+          name: 'social',
+          component: () => import('@/pages/social/Index.vue'),
+          meta: { roles: ['ADMIN'] },
+        },
+        {
           path: 'ads',
           name: 'ads',
           component: () => import('@/pages/ads/Index.vue'),

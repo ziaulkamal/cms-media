@@ -11,9 +11,13 @@ import {
   Mail,
   MapPin,
   Megaphone,
+  Menu as MenuIcon,
   MessageSquare,
   Newspaper,
+  PanelBottom,
+  Palette,
   Radio,
+  Share2,
   Settings,
   Tags,
   Users,
@@ -68,6 +72,15 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: 'Live Streaming', to: '/live-streams', icon: Radio, roles: AUTHOR_UP },
       { label: 'Venue', to: '/venue-content', icon: MapPin, roles: EDITOR_UP },
+    ],
+  },
+  {
+    label: 'Tampilan Situs',
+    items: [
+      { label: 'Menu', to: '/menus', icon: MenuIcon, roles: EDITOR_UP },
+      { label: 'Branding', to: '/branding', icon: Palette, roles: ADMIN_ONLY },
+      { label: 'Footer', to: '/footer-settings', icon: PanelBottom, roles: ADMIN_ONLY },
+      { label: 'Sosial', to: '/social', icon: Share2, roles: ADMIN_ONLY },
     ],
   },
   {

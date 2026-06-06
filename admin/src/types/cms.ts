@@ -361,6 +361,74 @@ export interface CreateTagPayload {
   name: string;
 }
 
+// ── Menu WEB ──────────────────────────────────────────────────────────────
+export type MenuLocation = 'MAIN' | 'FOOTER' | 'FOOTER_BOTTOM';
+export type MenuLinkType = 'ANCHOR' | 'ROUTE' | 'EXTERNAL';
+
+export interface MenuItem {
+  id: string;
+  location: MenuLocation;
+  parentId: string | null;
+  label: string;
+  type: MenuLinkType;
+  /** Nilai tautan; null untuk judul kolom footer. */
+  url: string | null;
+  openInNewTab: boolean;
+  position: number;
+  isVisible: boolean;
+}
+
+/** Node menu berjenjang (kolom footer -> item). */
+export interface MenuNode extends MenuItem {
+  children: MenuNode[];
+}
+
+export interface CreateMenuItemPayload {
+  location: MenuLocation;
+  parentId?: string;
+  label: string;
+  type?: MenuLinkType;
+  url?: string | null;
+  openInNewTab?: boolean;
+  isVisible?: boolean;
+}
+
+export interface UpdateMenuItemPayload {
+  label?: string;
+  type?: MenuLinkType;
+  url?: string | null;
+  openInNewTab?: boolean;
+  isVisible?: boolean;
+}
+
+/** Satu simpul susunan baru pohon menu (payload reorder). */
+export interface ReorderMenuItem {
+  id: string;
+  parentId: string | null;
+  position: number;
+}
+
+// ── Sosial media ────────────────────────────────────────────────────────────
+export type SocialPlatform =
+  | 'facebook'
+  | 'instagram'
+  | 'threads'
+  | 'x'
+  | 'youtube'
+  | 'tiktok'
+  | 'linkedin'
+  | 'whatsapp'
+  | 'telegram'
+  | 'website'
+  | 'email';
+
+/** Satu tautan sosial media (platform + URL + aktif). */
+export interface SocialLink {
+  platform: SocialPlatform | string;
+  url: string;
+  enabled: boolean;
+}
+
 export interface CreateAdSlotPayload {
   key: string;
   name: string;
