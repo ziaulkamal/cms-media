@@ -15,7 +15,7 @@ export const envValidationSchema = Joi.object({
   API_PREFIX: Joi.string().default('api'),
   API_VERSION: Joi.string().default('v1'),
   CORS_ORIGINS: Joi.string().default(
-    'http://localhost:3001,http://localhost:5173',
+    'http://localhost:3001,http://localhost:5173,http://localhost:5174',
   ),
   SIMPORA_API_URL: Joi.string().uri().default('http://localhost:8000/api'),
   SIMPORA_POLL_MS: Joi.number().integer().min(1000).default(4000),
