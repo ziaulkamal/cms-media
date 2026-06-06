@@ -2,9 +2,10 @@
  * src/main.ts
  * Bootstrap aplikasi: security headers, CORS, global pipe/filter/interceptor, prefix versioned.
  */
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { createServer } from 'net';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
@@ -19,6 +20,36 @@ import {
   CSRF_TOKEN_COOKIE,
   issueCsrfCookie,
 } from './common/utils/auth-cookies';
+
+/** Cek apakah sebuah port bebas (bind sementara lalu lepas). */
+function isPortFree(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const tester = createServer()
+      .once('error', () => resolve(false))
+      .once('listening', () => tester.close(() => resolve(true)))
+      .listen(port);
+  });
+}
+
+/** Port bebas pertama: coba port utama, lalu pindai rentang fallback. */
+async function resolvePort(config: ConfigService): Promise<number> {
+  const preferred = config.get<number>('port') ?? 3001;
+  const { start, end } = config.get<{ start: number; end: number }>(
+    'portRange',
+  ) ?? { start: 3001, end: 3010 };
+
+  const candidates = [
+    preferred,
+    ...Array.from({ length: end - start + 1 }, (_, i) => start + i),
+  ].filter((p, i, arr) => arr.indexOf(p) === i);
+
+  for (const port of candidates) {
+    if (await isPortFree(port)) return port;
+  }
+  throw new Error(
+    `Tidak ada port tersedia (utama ${preferred}, rentang ${start}-${end}).`,
+  );
+}
 
 /** Inisialisasi dan jalankan HTTP server Nest dengan fondasi keamanan global. */
 async function bootstrap(): Promise<void> {
@@ -80,8 +111,9 @@ async function bootstrap(): Promise<void> {
 
   app.enableShutdownHooks();
 
-  const port = config.get<number>('port') ?? 3000;
+  const port = await resolvePort(config);
   await app.listen(port);
+  Logger.log(`Server listening on http://localhost:${port}`, 'Bootstrap');
 }
 
 void bootstrap();

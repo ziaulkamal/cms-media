@@ -9,10 +9,14 @@ export const envValidationSchema = Joi.object({
   NODE_ENV: Joi.string()
     .valid('development', 'test', 'production')
     .default('development'),
-  PORT: Joi.number().port().default(3000),
+  PORT: Joi.number().port().default(3001),
+  PORT_RANGE_START: Joi.number().port().default(3001),
+  PORT_RANGE_END: Joi.number().port().default(3010),
   API_PREFIX: Joi.string().default('api'),
   API_VERSION: Joi.string().default('v1'),
-  CORS_ORIGINS: Joi.string().default('http://localhost:3000'),
+  CORS_ORIGINS: Joi.string().default(
+    'http://localhost:3001,http://localhost:5173',
+  ),
 
   DATABASE_URL: Joi.string().uri({ scheme: ['postgresql', 'postgres'] }).required(),
   DIRECT_URL: Joi.string()
@@ -30,7 +34,7 @@ export const envValidationSchema = Joi.object({
 
   STORAGE_DRIVER: Joi.string().valid('local', 's3').default('local'),
   STORAGE_LOCAL_DIR: Joi.string().default('storage/uploads'),
-  STORAGE_PUBLIC_BASE_URL: Joi.string().default('http://localhost:3000/uploads'),
+  STORAGE_PUBLIC_BASE_URL: Joi.string().default('http://localhost:3001/uploads'),
   MEDIA_MAX_SIZE_BYTES: Joi.number().positive().default(10485760),
 
   THROTTLE_TTL: Joi.number().positive().default(60),

@@ -7,6 +7,8 @@
 export interface AppConfig {
   env: string;
   port: number;
+  /** Rentang port fallback saat port utama dipakai (dev/watch). */
+  portRange: { start: number; end: number };
   apiPrefix: string;
   apiVersion: string;
   corsOrigins: string[];
@@ -33,7 +35,11 @@ export interface AppConfig {
 /** Factory config yang dimuat ConfigModule saat boot. */
 export default (): AppConfig => ({
   env: process.env.NODE_ENV ?? 'development',
-  port: Number(process.env.PORT ?? 3000),
+  port: Number(process.env.PORT ?? 3001),
+  portRange: {
+    start: Number(process.env.PORT_RANGE_START ?? 3001),
+    end: Number(process.env.PORT_RANGE_END ?? 3010),
+  },
   apiPrefix: process.env.API_PREFIX ?? 'api',
   apiVersion: process.env.API_VERSION ?? 'v1',
   corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
