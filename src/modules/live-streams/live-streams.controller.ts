@@ -16,6 +16,7 @@ import {
 import { UserRole } from '@prisma/client';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
+import { NoCache } from '../../common/decorators/no-cache.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CreateLiveStreamDto } from './dto/create-live-stream.dto';
 import { UpdateLiveStreamDto } from './dto/update-live-stream.dto';
@@ -30,8 +31,9 @@ const MANAGE_ROLES = [UserRole.ADMIN, UserRole.EDITOR, UserRole.AUTHOR];
 export class LiveStreamsController {
   constructor(private readonly streams: LiveStreamsService) {}
 
-  /** Serving publik: master saklar + daftar kanal. */
+  /** Serving publik: master saklar + daftar kanal (realtime → tanpa cache). */
   @Public()
+  @NoCache()
   @Get()
   serve() {
     return this.streams.serve();
@@ -43,6 +45,14 @@ export class LiveStreamsController {
   @Get('manage')
   listManage() {
     return this.streams.listManage();
+  }
+
+  /** Opsi pertandingan (ongoing+scheduled) dari CORE untuk penaut kanal. */
+  @ApiBearerAuth()
+  @Roles(...MANAGE_ROLES)
+  @Get('match-options')
+  matchOptions() {
+    return this.streams.fetchMatchOptions();
   }
 
   /** Buat kanal baru. */
@@ -70,6 +80,14 @@ export class LiveStreamsController {
   @Patch(':id/toggle')
   toggle(@Param('id', ParseUUIDPipe) id: string) {
     return this.streams.toggle(id);
+  }
+
+  /** Toggle sorotan kanal (maks 2). */
+  @ApiBearerAuth()
+  @Roles(...MANAGE_ROLES)
+  @Patch(':id/feature')
+  toggleFeatured(@Param('id', ParseUUIDPipe) id: string) {
+    return this.streams.toggleFeatured(id);
   }
 
   /** Hapus kanal. */

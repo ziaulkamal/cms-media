@@ -13,6 +13,17 @@ export const settingsApi = {
       http.get<SuccessEnvelope<Record<string, unknown>>>('/settings/public'),
     ),
 
+  /**
+   * Map publik tanpa cache browser (param unik) — untuk status yang harus
+   * langsung akurat, mis. master saklar siaran (endpoint publik di-cache 60s+).
+   */
+  publicMapFresh: () =>
+    unwrap<Record<string, unknown>>(
+      http.get<SuccessEnvelope<Record<string, unknown>>>('/settings/public', {
+        params: { _: Date.now() },
+      }),
+    ),
+
   list: () => unwrap<Setting[]>(http.get<SuccessEnvelope<Setting[]>>('/settings')),
 
   get: (key: string) =>

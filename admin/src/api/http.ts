@@ -65,12 +65,16 @@ export const http = axios.create({
   withCredentials: true,
 });
 
-// Sisipkan header CSRF pada request mutasi (double-submit).
+// CSRF pada mutasi + matikan cache pada GET (admin selalu butuh data terkini).
 http.interceptors.request.use((config) => {
   const method = (config.method ?? 'get').toUpperCase();
   if (!SAFE_METHODS.includes(method)) {
     const token = readCookie(CSRF_COOKIE);
     if (token) config.headers.set('X-CSRF-Token', token);
+  } else {
+    // Endpoint publik di-cache (Cache-Control); paksa revalidasi agar tak basi.
+    config.headers.set('Cache-Control', 'no-cache');
+    config.headers.set('Pragma', 'no-cache');
   }
   return config;
 });

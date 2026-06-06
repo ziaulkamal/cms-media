@@ -394,6 +394,7 @@ model LiveStream {
   venueName   String?  @map("venue_name")
   viewerCount Int      @default(0) @map("viewer_count")
   isLive      Boolean  @default(false) @map("is_live")
+  isFeatured  Boolean  @default(false) @map("is_featured") // sorotan di WEB (maks 2)
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -409,6 +410,7 @@ model VenueContent {
   description  String
   imageMediaId String?  @map("image_media_id") @db.Uuid
   gallery      Json? // daftar mediaId/url tambahan (opsional)
+  galleryVisible Boolean @default(true) @map("gallery_visible") // tampilkan galeri di WEB
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

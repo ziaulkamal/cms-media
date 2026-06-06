@@ -1,7 +1,7 @@
 <!-- admin/src/pages/live-streams/Index.vue — kanal siaran: master switch, CRUD kanal, toggle tayang. -->
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { Pencil, Radio, Trash2, Tv, Users } from 'lucide-vue-next';
+import { Pencil, Radio, Star, Trash2, Tv, Users } from 'lucide-vue-next';
 import { ApiError } from '@/api/http';
 import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
@@ -9,11 +9,13 @@ import Card from '@/components/ui/Card.vue';
 import Modal from '@/components/ui/Modal.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import QueryState from '@/components/ui/QueryState.vue';
+import SelectInput from '@/components/ui/SelectInput.vue';
 import TextInput from '@/components/ui/TextInput.vue';
 import { useConfirm } from '@/composables/useConfirm';
 import {
   useLiveStreamMutations,
   useLiveStreamsQuery,
+  useMatchOptionsQuery,
   useStreamingSwitch,
 } from '@/composables/useLiveStreams';
 import { useToast } from '@/composables/useToast';
@@ -28,6 +30,29 @@ const isAdmin = computed(() => auth.role === 'ADMIN');
 const { data, isLoading, error } = useLiveStreamsQuery();
 const m = useLiveStreamMutations();
 const streaming = useStreamingSwitch();
+const matchOptions = useMatchOptionsQuery();
+
+/** Opsi dropdown jadwal; sisipkan match tertaut lama bila sudah tak di daftar. */
+const matchSelectOptions = computed(() => {
+  const opts = (matchOptions.data.value ?? []).map((o) => ({
+    value: o.ref,
+    label: o.label,
+  }));
+  if (form.matchRef && !opts.some((o) => o.value === form.matchRef)) {
+    opts.unshift({ value: form.matchRef, label: '(pertandingan tertaut saat ini)' });
+  }
+  return opts;
+});
+
+/** Pilih jadwal → set matchRef + auto-isi cabor/venue (judul bila masih kosong). */
+function onSelectMatch(ref: string): void {
+  form.matchRef = ref;
+  const opt = (matchOptions.data.value ?? []).find((o) => o.ref === ref);
+  if (!opt) return;
+  form.sportName = opt.sportName ?? '';
+  form.venueName = opt.venueName ?? '';
+  if (!form.title.trim()) form.title = opt.label;
+}
 
 /** Thumbnail YouTube dari video id. */
 const thumb = (id: string) => `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
@@ -50,22 +75,32 @@ async function onToggleLive(s: LiveStream): Promise<void> {
   }
 }
 
+async function onToggleFeature(s: LiveStream): Promise<void> {
+  try {
+    await m.toggleFeature.mutateAsync(s.id);
+  } catch (e) {
+    toast.error(e instanceof ApiError ? e.message : 'Gagal mengubah sorotan.');
+  }
+}
+
 // --- Form buat / ubah ---
 const formOpen = ref(false);
 const editId = ref<string | null>(null);
 const form = reactive({
   youtube: '',
   title: '',
+  matchRef: '',
   sportName: '',
   venueName: '',
   sortOrder: '0',
+  isFeatured: false,
 });
 const formError = ref('');
 
 function openCreate(): void {
   editId.value = null;
   formError.value = '';
-  Object.assign(form, { youtube: '', title: '', sportName: '', venueName: '', sortOrder: '0' });
+  Object.assign(form, { youtube: '', title: '', matchRef: '', sportName: '', venueName: '', sortOrder: '0', isFeatured: false });
   formOpen.value = true;
 }
 
@@ -75,9 +110,11 @@ function openEdit(s: LiveStream): void {
   Object.assign(form, {
     youtube: s.youtubeId,
     title: s.title,
+    matchRef: s.matchRef ?? '',
     sportName: s.sportName ?? '',
     venueName: s.venueName ?? '',
     sortOrder: String(s.sortOrder),
+    isFeatured: s.isFeatured,
   });
   formOpen.value = true;
 }
@@ -87,9 +124,11 @@ async function onSubmit(): Promise<void> {
   const payload = {
     youtube: form.youtube.trim(),
     title: form.title.trim(),
+    matchRef: form.matchRef || undefined,
     sportName: form.sportName || undefined,
     venueName: form.venueName || undefined,
     sortOrder: Number(form.sortOrder) || 0,
+    isFeatured: form.isFeatured,
   };
   try {
     if (editId.value) {
@@ -184,6 +223,12 @@ async function onRemove(s: LiveStream): Promise<void> {
             >
               <Tv class="h-3 w-3" /> LIVE
             </Badge>
+            <span
+              v-if="s.isFeatured"
+              class="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white"
+            >
+              <Star class="h-3 w-3 fill-white" /> Sorotan
+            </span>
           </div>
           <div class="p-4">
             <p class="text-text-primary truncate text-sm font-semibold">{{ s.title }}</p>
@@ -201,6 +246,15 @@ async function onRemove(s: LiveStream): Promise<void> {
                 @click="onToggleLive(s)"
               >
                 {{ s.isLive ? 'Hentikan' : 'Tayangkan' }}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                :loading="m.toggleFeature.isPending.value"
+                :title="s.isFeatured ? 'Batalkan sorotan' : 'Jadikan sorotan'"
+                @click="onToggleFeature(s)"
+              >
+                <Star class="h-4 w-4" :class="s.isFeatured ? 'fill-amber-500 text-amber-500' : ''" />
               </Button>
               <Button size="sm" variant="ghost" @click="openEdit(s)">
                 <Pencil class="h-4 w-4" />
@@ -225,9 +279,20 @@ async function onRemove(s: LiveStream): Promise<void> {
           :error="formError"
         />
         <TextInput v-model="form.title" label="Judul" required />
+        <SelectInput
+          :model-value="form.matchRef"
+          label="Tautkan ke Jadwal (opsional)"
+          :placeholder="matchOptions.isLoading.value ? 'Memuat jadwal…' : 'Tanpa penaut (isi manual)'"
+          :options="matchSelectOptions"
+          @update:model-value="onSelectMatch"
+        />
         <TextInput v-model="form.sportName" label="Cabang Olahraga" placeholder="mis. Sepakbola" />
         <TextInput v-model="form.venueName" label="Venue" placeholder="mis. Stadion Calang" />
         <TextInput v-model="form.sortOrder" label="Urutan" type="number" />
+        <label class="text-text-primary flex items-center gap-2 text-sm">
+          <input type="checkbox" v-model="form.isFeatured" class="border-border accent-primary size-4 rounded" />
+          Jadikan sorotan (maks 2 — tampil menonjol di situs publik)
+        </label>
       </form>
       <template #footer>
         <Button variant="secondary" @click="formOpen = false">Batal</Button>

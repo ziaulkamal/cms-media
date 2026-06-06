@@ -1,7 +1,7 @@
 <!-- admin/src/pages/venue-content/Index.vue — pengayaan venue: deskripsi + foto per venue simpora2026. -->
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import { MapPin, Pencil, Trash2 } from 'lucide-vue-next';
+import { MapPin, Pencil, Trash2, X } from 'lucide-vue-next';
 import { ApiError } from '@/api/http';
 import { mediaApi } from '@/api/media';
 import Button from '@/components/ui/Button.vue';
@@ -47,18 +47,29 @@ const hasSources = computed(
 const formOpen = ref(false);
 const isEdit = ref(false);
 const uploading = ref(false);
+const uploadingGallery = ref(false);
 const form = reactive({
   venueRef: '',
   description: '',
   imageMediaId: undefined as string | undefined,
   imageUrl: null as string | null,
+  gallery: [] as string[],
+  galleryVisible: true,
 });
 const formError = ref('');
+
+/** Normalisasi gallery JSON (string[] atau {url}[]) → array URL. */
+function toGalleryUrls(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((g) => (typeof g === 'string' ? g : (g as { url?: string })?.url ?? ''))
+    .filter(Boolean);
+}
 
 function openCreate(): void {
   isEdit.value = false;
   formError.value = '';
-  Object.assign(form, { venueRef: '', description: '', imageMediaId: undefined, imageUrl: null });
+  Object.assign(form, { venueRef: '', description: '', imageMediaId: undefined, imageUrl: null, gallery: [], galleryVisible: true });
   formOpen.value = true;
 }
 
@@ -70,6 +81,8 @@ function openEdit(v: VenueContent): void {
     description: v.description,
     imageMediaId: undefined,
     imageUrl: v.imageUrl,
+    gallery: toGalleryUrls(v.gallery),
+    galleryVisible: v.galleryVisible,
   });
   formOpen.value = true;
 }
@@ -88,6 +101,24 @@ async function onImage(files: File[]): Promise<void> {
   }
 }
 
+/** Unggah beberapa foto galeri venue; tambahkan URL-nya ke form. */
+async function onGallery(files: File[]): Promise<void> {
+  uploadingGallery.value = true;
+  try {
+    const uploaded = await Promise.all(files.map((f) => mediaApi.upload(f)));
+    form.gallery.push(...uploaded.map((mm) => mm.url));
+  } catch (e) {
+    toast.error(e instanceof ApiError ? e.message : 'Gagal mengunggah galeri.');
+  } finally {
+    uploadingGallery.value = false;
+  }
+}
+
+/** Buang satu foto dari galeri (sebelum simpan). */
+function removeGallery(i: number): void {
+  form.gallery.splice(i, 1);
+}
+
 async function onSubmit(): Promise<void> {
   formError.value = '';
   if (!form.venueRef) {
@@ -99,6 +130,8 @@ async function onSubmit(): Promise<void> {
       venueRef: form.venueRef,
       description: form.description,
       imageMediaId: form.imageMediaId,
+      gallery: form.gallery,
+      galleryVisible: form.galleryVisible,
     });
     formOpen.value = false;
     toast.success('Konten venue disimpan.');
@@ -201,6 +234,29 @@ async function onRemove(v: VenueContent): Promise<void> {
             class="h-32 w-full rounded-lg object-cover"
           />
           <Dropzone :busy="uploading" :multiple="false" @files="onImage" />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="text-text-primary text-sm font-medium">Galeri foto (opsional)</span>
+            <label class="text-text-primary flex items-center gap-2 text-sm">
+              <input type="checkbox" v-model="form.galleryVisible" class="accent-primary size-4 rounded" />
+              Tampilkan di WEB
+            </label>
+          </div>
+          <div v-if="form.gallery.length" class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            <div v-for="(g, i) in form.gallery" :key="i" class="group relative">
+              <img :src="g" alt="Foto galeri" class="aspect-square w-full rounded-lg object-cover" />
+              <button
+                type="button"
+                class="bg-danger absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-full text-white opacity-0 transition group-hover:opacity-100"
+                @click="removeGallery(i)"
+              >
+                <X class="size-3.5" />
+              </button>
+            </div>
+          </div>
+          <Dropzone :busy="uploadingGallery" :multiple="true" @files="onGallery" />
         </div>
       </form>
       <template #footer>

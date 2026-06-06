@@ -41,9 +41,9 @@ function isAllowedRoom(room: string): boolean {
     origin: (origin: string | undefined, cb: (e: Error | null, ok: boolean) => void) => {
       const allowed = (process.env.CORS_ORIGINS ?? '')
         .split(',')
-        .map((o) => o.trim())
+        .map((o) => o.trim().replace(/\/+$/, '')) // samakan dgn config REST
         .filter(Boolean);
-      cb(null, !origin || allowed.includes(origin));
+      cb(null, !origin || allowed.includes(origin.replace(/\/+$/, '')));
     },
     credentials: true,
   },

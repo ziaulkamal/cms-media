@@ -13,6 +13,8 @@ export interface LiveStreamPublicView {
   venue: string | null;
   penonton: number;
   live: boolean;
+  matchRef: string | null; // penaut ke pertandingan simpora (FE buka modal di kartu laga)
+  sorotan: boolean; // tampil menonjol di WEB (maks 2)
 }
 
 /** Bentuk admin lengkap untuk panel pengelolaan kanal. */
@@ -25,6 +27,7 @@ export interface LiveStreamView {
   venueName: string | null;
   viewerCount: number;
   isLive: boolean;
+  isFeatured: boolean;
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
@@ -40,7 +43,19 @@ export function toLiveStreamPublicView(s: LiveStream): LiveStreamPublicView {
     venue: s.venueName,
     penonton: s.viewerCount,
     live: s.isLive,
+    matchRef: s.matchRef,
+    sorotan: s.isFeatured,
   };
+}
+
+/** Opsi pertandingan (dari CORE) untuk dropdown penaut kanal di admin. */
+export interface MatchOption {
+  ref: string; // id match simpora (disimpan sebagai matchRef)
+  code: string; // match_code, mis. "SPK-001"
+  label: string; // teks dropdown
+  sportName: string | null; // utk auto-isi cabor kanal
+  venueName: string | null; // utk auto-isi venue kanal
+  status: string;
 }
 
 /** Petakan ke bentuk admin lengkap. */
@@ -54,6 +69,7 @@ export function toLiveStreamView(s: LiveStream): LiveStreamView {
     venueName: s.venueName,
     viewerCount: s.viewerCount,
     isLive: s.isLive,
+    isFeatured: s.isFeatured,
     sortOrder: s.sortOrder,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,

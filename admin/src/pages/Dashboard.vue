@@ -81,7 +81,7 @@ const recent = useQuery({
     <PageHeader title="Dashboard" :subtitle="`Halo, ${auth.user?.name ?? ''}`" />
 
     <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-      <StatCard label="Total Artikel" :value="totalArticles.data.value ?? 0" :icon="Newspaper" :loading="totalArticles.isLoading.value" />
+      <StatCard label="Total Berita" :value="totalArticles.data.value ?? 0" :icon="Newspaper" :loading="totalArticles.isLoading.value" />
       <StatCard label="Terbit" :value="publishedArticles.data.value ?? 0" :icon="Send" :loading="publishedArticles.isLoading.value" />
       <StatCard label="Draf" :value="draftArticles.data.value ?? 0" :icon="FileText" :loading="draftArticles.isLoading.value" />
       <StatCard v-if="isEditorUp" label="Komentar Menunggu" :value="pendingComments.data.value ?? 0" :icon="MessageSquare" :loading="pendingComments.isLoading.value" />
@@ -94,7 +94,7 @@ const recent = useQuery({
         <TrendChart :labels="trend.labels" :values="trend.values" />
       </Card>
 
-      <Card title="Artikel Terbaru">
+      <Card title="Berita Terbaru">
         <ul class="divide-border divide-y">
           <li
             v-for="a in recent.data.value?.items ?? []"

@@ -71,9 +71,14 @@ async function bootstrap(): Promise<void> {
     next();
   });
 
-  // Serve berkas media lokal sebagai aset statis publik di /uploads.
+  // Serve berkas media lokal di /uploads. Nama file = uuid unik & tak pernah
+  // ditimpa → aman cache jangka panjang (immutable) untuk menekan load WEB.
   const uploadsDir = config.get<string>('storage.localDir') ?? 'storage/uploads';
-  app.useStaticAssets(join(process.cwd(), uploadsDir), { prefix: '/uploads' });
+  app.useStaticAssets(join(process.cwd(), uploadsDir), {
+    prefix: '/uploads',
+    maxAge: '30d',
+    immutable: true,
+  });
   app.enableCors({
     origin: config.get<string[]>('corsOrigins'),
     credentials: true,

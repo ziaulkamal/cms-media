@@ -46,10 +46,10 @@ export default (): AppConfig => ({
   apiVersion: process.env.API_VERSION ?? 'v1',
   corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
     .split(',')
-    .map((o) => o.trim())
+    .map((o) => o.trim().replace(/\/+$/, '')) // buang trailing slash (browser tak kirim)
     .filter(Boolean),
   simporaApiUrl: (
-    process.env.SIMPORA_API_URL ?? 'http://localhost:8000/api'
+    process.env.SIMPORA_API_URL ?? 'http://simpora2026.test/api/v1'
   ).replace(/\/+$/, ''),
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET as string,

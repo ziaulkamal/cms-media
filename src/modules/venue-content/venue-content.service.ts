@@ -58,6 +58,7 @@ export class VenueContentService {
         description: dto.description,
         imageMedia: imageConnect,
         gallery,
+        galleryVisible: dto.galleryVisible ?? true,
       },
       {
         description: dto.description,
@@ -65,6 +66,9 @@ export class VenueContentService {
           ? { connect: { id: dto.imageMediaId } }
           : { disconnect: true },
         gallery,
+        ...(dto.galleryVisible === undefined
+          ? {}
+          : { galleryVisible: dto.galleryVisible }),
       },
     );
     return toVenueContentView(result);

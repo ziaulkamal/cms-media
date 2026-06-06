@@ -160,11 +160,11 @@ async function bulkDelete(): Promise<void> {
 
 <template>
   <div>
-    <PageHeader title="Halaman" subtitle="Halaman statis (Tentang, Syarat, Privasi, dll).">
+    <PageHeader title="Laman" subtitle="Laman statis (Tentang, Syarat, Privasi, dll).">
       <template #actions>
         <Button @click="router.push('/pages/new')">
           <Plus class="h-4 w-4" />
-          Halaman Baru
+          Laman Baru
         </Button>
       </template>
     </PageHeader>

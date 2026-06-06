@@ -87,7 +87,7 @@ const statusDot: Record<ArticleStatus, string> = {
 
 const columns: Column[] = [
   { key: 'select', label: '', class: 'w-10' },
-  { key: 'title', label: 'Artikel' },
+  { key: 'title', label: 'Judul' },
   { key: 'status', label: 'Status', sortable: true },
   { key: 'author', label: 'Penulis', class: 'hidden lg:table-cell', sortable: true },
   { key: 'publishedAt', label: 'Terbit', class: 'hidden md:table-cell' },
@@ -270,11 +270,11 @@ async function applyBulkEdit(): Promise<void> {
 
 <template>
   <div>
-    <PageHeader title="Artikel" subtitle="Kelola dan terbitkan konten berita.">
+    <PageHeader title="Berita" subtitle="Kelola dan terbitkan konten berita.">
       <template #actions>
         <Button @click="router.push('/articles/new')">
           <Plus class="h-4 w-4" />
-          Tulis Artikel
+          Tulis Berita
         </Button>
       </template>
     </PageHeader>

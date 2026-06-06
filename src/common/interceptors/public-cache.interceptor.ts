@@ -12,11 +12,14 @@ import { Reflector } from '@nestjs/core';
 import { Request, Response } from 'express';
 import { Observable } from 'rxjs';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { NO_CACHE_KEY } from '../decorators/no-cache.decorator';
 
 /** Header cache untuk endpoint baca-publik: edge-friendly + stale-while-revalidate. */
 const PUBLIC_CACHE = 'public, max-age=60, stale-while-revalidate=300';
+/** Endpoint realtime (mis. live-streams): jangan di-cache agar update tak telat. */
+const NO_CACHE = 'no-store';
 
-/** Tambahkan Cache-Control hanya pada GET yang ditandai @Public. */
+/** Set Cache-Control pada GET @Public; @NoCache → no-store (realtime). */
 @Injectable()
 export class PublicCacheInterceptor implements NestInterceptor {
   constructor(private readonly reflector: Reflector) {}
@@ -29,8 +32,12 @@ export class PublicCacheInterceptor implements NestInterceptor {
       ]);
       const req = context.switchToHttp().getRequest<Request>();
       if (isPublic && req.method === 'GET') {
+        const noCache = this.reflector.getAllAndOverride<boolean>(NO_CACHE_KEY, [
+          context.getHandler(),
+          context.getClass(),
+        ]);
         const res = context.switchToHttp().getResponse<Response>();
-        res.setHeader('Cache-Control', PUBLIC_CACHE);
+        res.setHeader('Cache-Control', noCache ? NO_CACHE : PUBLIC_CACHE);
       }
     }
     return next.handle();

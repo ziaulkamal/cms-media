@@ -1,18 +1,19 @@
-<!-- admin/src/components/common/PermalinkPreview.vue — pratinjau permalink dari judul + struktur tersimpan. -->
+<!-- admin/src/components/common/PermalinkPreview.vue — pratinjau tautan ke situs publik PORA (FE) dari judul/slug. -->
 <script setup lang="ts">
 import { computed } from 'vue';
+import { ExternalLink } from 'lucide-vue-next';
 import { usePublicSettingsQuery } from '@/composables/useSettings';
-import { buildPermalink, slugify } from '@/lib/permalink';
+import { slugify } from '@/lib/permalink';
 
 const props = withDefaults(
   defineProps<{
     /** Judul untuk diturunkan jadi slug (bila slugOverride kosong). */
     title: string;
-    /** Slug eksplisit (mis. field slug kustom halaman). */
+    /** Slug eksplisit (mis. field slug kustom laman). */
     slugOverride?: string;
-    /** Tipe konten menentukan struktur permalink yang dipakai. */
+    /** Tipe konten menentukan rute FE yang dipakai. */
     type?: 'article' | 'page';
-    /** Slug kategori (untuk token %category% pada artikel). */
+    /** Slug kategori — tak dipakai rute FE saat ini (dipertahankan utk kompat). */
     category?: string;
   }>(),
   { type: 'article' },
@@ -20,23 +21,44 @@ const props = withDefaults(
 
 const { data } = usePublicSettingsQuery();
 
-const siteUrl = computed(() => String(data.value?.site_url ?? '').replace(/\/$/, ''));
-
-const structure = computed(() => {
-  const key = props.type === 'page' ? 'page_permalink' : 'permalink_structure';
-  return String(data.value?.[key] ?? (props.type === 'page' ? '/%pagename%' : '/%postname%'));
-});
-
-const slug = computed(() => slugify(props.slugOverride || props.title) || (props.type === 'page' ? 'nama-halaman' : 'judul-artikel'));
-
-const path = computed(() =>
-  buildPermalink(structure.value, { slug: slug.value, category: props.category }),
+/** Basis URL situs publik PORA (FE); utamakan frontend_url, fallback site_url. */
+const baseUrl = computed(() =>
+  String(data.value?.frontend_url ?? data.value?.site_url ?? '').replace(/\/$/, ''),
 );
+
+const slug = computed(
+  () =>
+    slugify(props.slugOverride || props.title) ||
+    (props.type === 'page' ? 'nama-laman' : 'judul-berita'),
+);
+
+/**
+ * Path rute FE (PoraAcehJaya-FE pakai HashRouter):
+ * berita di `/#/berita/:slug`, laman di `/#/:slug`.
+ */
+const path = computed(() =>
+  props.type === 'page' ? `/#/${slug.value}` : `/#/berita/${slug.value}`,
+);
+
+const url = computed(() => `${baseUrl.value}${path.value}`);
 </script>
 
 <template>
   <p class="text-text-muted text-xs">
     Permalink:
-    <span class="text-text-subtle">{{ siteUrl }}</span><span class="text-primary font-medium">{{ path }}</span>
+    <a
+      v-if="baseUrl"
+      :href="url"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="text-primary inline-flex items-center gap-1 font-medium hover:underline"
+      title="Buka pratinjau di situs publik"
+    >
+      <span class="text-text-subtle">{{ baseUrl }}</span>{{ path }}
+      <ExternalLink class="h-3 w-3 shrink-0" />
+    </a>
+    <span v-else class="text-text-subtle">
+      {{ path }} <em>(atur “URL Frontend” di Pengaturan untuk pratinjau)</em>
+    </span>
   </p>
 </template>

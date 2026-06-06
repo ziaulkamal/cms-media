@@ -26,6 +26,15 @@ function matchId(m: Record<string, unknown>): string | null {
 /** Rangkai representasi skor dari beragam kemungkinan field. */
 function matchScore(m: Record<string, unknown>): string {
   if (typeof m.score === 'string') return m.score;
+  // simpora: skor ada di relasi result.result_data (JSON {home,away}/{result}/{score}).
+  const rd = (m.result as Record<string, unknown> | undefined)?.result_data as
+    | Record<string, unknown>
+    | undefined;
+  if (rd) {
+    if (rd.result != null) return String(rd.result);
+    if (rd.score != null) return String(rd.score);
+    return `${rd.home ?? 0}-${rd.away ?? 0}`;
+  }
   const home = m.homeScore ?? m.home_score ?? (m.score as Record<string, unknown>)?.home;
   const away = m.awayScore ?? m.away_score ?? (m.score as Record<string, unknown>)?.away;
   return `${home ?? 0}-${away ?? 0}`;
@@ -95,11 +104,14 @@ export class SimporaPollerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** Normalisasi respons menjadi array (toleran pembungkus { data: [] }). */
+  /** Normalisasi respons menjadi array; bongkar paginator Laravel (data.data). */
   private toArray(body: unknown): Record<string, unknown>[] {
     if (Array.isArray(body)) return body as Record<string, unknown>[];
     const data = (body as { data?: unknown })?.data;
-    return Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
+    if (Array.isArray(data)) return data as Record<string, unknown>[];
+    // simpora bungkus paginator: { data: { current_page, data: [...] } }
+    const nested = (data as { data?: unknown })?.data;
+    return Array.isArray(nested) ? (nested as Record<string, unknown>[]) : [];
   }
 
   /** Poll pertandingan berjalan; emit saat skor/status berubah. */

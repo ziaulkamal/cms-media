@@ -107,8 +107,8 @@ Menu yang tampil mengikuti peran (RBAC di UI). Otorisasi sebenarnya tetap divali
 - **3 slot iklan** (`home_top`, `article_inline`, `sidebar_300x250`) + **3 creative** (HOUSE_IMAGE/ADSENSE/HOUSE_HTML).
 - **7 setting** lintas group (general/seo/social) dengan beragam tipe (STRING/TEXT/NUMBER/BOOLEAN/URL).
 
-- **4 halaman statis** (menu **Halaman**, terpisah dari Artikel): Tentang, Syarat & Ketentuan, Kebijakan Privasi, Daftar Isi. Tiga terakhir ditandai **wajib** (tak bisa dihapus).
-- **Setting permalink** (`permalink_structure`, `page_permalink`) di group `permalink` — diatur via menu **Permalink**.
+- **4 laman statis** (menu **Laman**, terpisah dari Berita): Tentang, Syarat & Ketentuan, Kebijakan Privasi, Daftar Isi. Tiga terakhir ditandai **wajib** (tak bisa dihapus).
+- **`frontend_url`** (group `general`) = basis URL situs publik PORA (FE). Dipakai pratinjau permalink di editor Berita/Laman: tautan klikable ke rute FE asli — Berita `/#/berita/:slug`, Laman `/#/:slug` (HashRouter).
 
 > Catatan: dummy **tidak** menyertakan berkas Media (perlu unggah file nyata). Unggah lewat menu **Media** untuk mencobanya; gambar bisa dijadikan "Gambar Utama" artikel.
 

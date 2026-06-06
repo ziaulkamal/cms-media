@@ -22,6 +22,7 @@ export interface VenueContentView {
   description: string;
   imageUrl: string | null;
   gallery: unknown;
+  galleryVisible: boolean;
   updatedAt: Date;
 }
 
@@ -35,6 +36,7 @@ export function toVenueContentView(
     description: v.description,
     imageUrl: v.imageMedia ? mediaPublicUrl(v.imageMedia.storageKey) : null,
     gallery: v.gallery,
+    galleryVisible: v.galleryVisible,
     updatedAt: v.updatedAt,
   };
 }

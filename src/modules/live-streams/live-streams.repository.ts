@@ -37,6 +37,13 @@ export class LiveStreamsRepository {
     });
   }
 
+  /** Jumlah kanal sorotan aktif (opsional kecualikan satu id saat update). */
+  countFeatured(excludeId?: string): Promise<number> {
+    return this.prisma.liveStream.count({
+      where: { isFeatured: true, ...(excludeId ? { id: { not: excludeId } } : {}) },
+    });
+  }
+
   /** Nilai boolean master saklar siaran (default false bila belum di-set). */
   async streamingEnabled(): Promise<boolean> {
     const setting = await this.prisma.setting.findUnique({

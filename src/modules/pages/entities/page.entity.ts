@@ -3,6 +3,10 @@
  * Bentuk publik Page + mapper dari entity Prisma.
  */
 import { Page } from '@prisma/client';
+import {
+  ContentBlock,
+  toContentBlocks,
+} from '../../../common/utils/content-blocks';
 
 /** Representasi Page yang dikirim ke client. */
 export interface PageView {
@@ -10,6 +14,8 @@ export interface PageView {
   slug: string;
   title: string;
   body: unknown;
+  // Body ternormalisasi sebagai blok (paragraf/subjudul/kutipan) untuk render FE.
+  blocks: ContentBlock[];
   status: string;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -25,6 +31,7 @@ export function toPageView(p: Page): PageView {
     slug: p.slug,
     title: p.title,
     body: p.body,
+    blocks: toContentBlocks(p.body),
     status: p.status,
     seoTitle: p.seoTitle,
     seoDescription: p.seoDescription,

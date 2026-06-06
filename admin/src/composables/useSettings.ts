@@ -8,7 +8,7 @@ export function useSettingsQuery() {
   return useQuery({ queryKey: ['settings'], queryFn: () => settingsApi.list() });
 }
 
-/** Map setting publik (site_url, permalink_structure, dst.) untuk preview permalink. */
+/** Map setting publik (frontend_url, site_url, dst.) untuk pratinjau tautan FE. */
 export function usePublicSettingsQuery() {
   return useQuery({
     queryKey: ['settings-public'],

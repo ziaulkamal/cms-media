@@ -255,7 +255,8 @@ async function seedAds(): Promise<void> {
 /** Setting situs (SEO/meta + beberapa tipe untuk demo SettingField). */
 async function seedSettings(): Promise<void> {
   const settings = [
-    { key: 'site_url', value: 'https://cms-media.local', type: SettingType.URL, group: 'general', label: 'URL Situs', isPublic: true },
+    { key: 'site_url', value: 'https://cms-media.local', type: SettingType.URL, group: 'general', label: 'URL Situs (CMS)', isPublic: true },
+    { key: 'frontend_url', value: 'http://localhost:5173', type: SettingType.URL, group: 'general', label: 'URL Frontend Publik (PORA)', isPublic: true },
     { key: 'site_title', value: 'CMS Media', type: SettingType.STRING, group: 'seo', label: 'Judul Situs', isPublic: true },
     { key: 'site_description', value: 'Portal berita ekonomi, pasar, dan teknologi.', type: SettingType.TEXT, group: 'seo', label: 'Deskripsi Situs', isPublic: true },
     { key: 'site_keywords', value: 'berita, ekonomi, pasar, teknologi', type: SettingType.STRING, group: 'seo', label: 'Keyword Situs', isPublic: true },
@@ -315,22 +316,6 @@ async function seedPages(): Promise<void> {
   console.log('✓ Halaman statis siap (Tentang, Syarat, Privasi, Daftar Isi).');
 }
 
-/** Setting permalink (struktur URL) — disimpan publik agar bisa dipakai preview. */
-async function seedPermalink(): Promise<void> {
-  const items = [
-    { key: 'permalink_structure', value: '/%category%/%postname%', label: 'Struktur Permalink Artikel' },
-    { key: 'page_permalink', value: '/%pagename%', label: 'Struktur Permalink Halaman' },
-  ];
-  for (const it of items) {
-    await prisma.setting.upsert({
-      where: { key: it.key },
-      update: {},
-      create: { key: it.key, value: it.value, type: SettingType.STRING, group: 'permalink', label: it.label, isPublic: true },
-    });
-  }
-  console.log('✓ Setting permalink siap.');
-}
-
 async function main(): Promise<void> {
   await seedUsers();
   await seedCategories();
@@ -340,7 +325,6 @@ async function main(): Promise<void> {
   await seedAds();
   await seedSettings();
   await seedPages();
-  await seedPermalink();
   console.log('\nSeed selesai. Login admin: lihat SEED_ADMIN_* di .env.');
 }
 

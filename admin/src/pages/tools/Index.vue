@@ -50,7 +50,7 @@ const summary = computed(() => {
   return [
     { key: 'categories', label: 'Kategori', value: s.categories, icon: FolderTree },
     { key: 'tags', label: 'Tag', value: s.tags, icon: Tags },
-    { key: 'articles', label: 'Artikel', value: s.articles, icon: FileText },
+    { key: 'articles', label: 'Berita', value: s.articles, icon: FileText },
     { key: 'comments', label: 'Komentar', value: s.comments, icon: MessageSquare },
     { key: 'gallery', label: 'Foto', value: s.gallery, icon: Images },
     { key: 'liveStreams', label: 'Siaran', value: s.liveStreams, icon: Radio },

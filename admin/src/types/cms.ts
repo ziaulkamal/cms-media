@@ -508,6 +508,7 @@ export interface LiveStream {
   venueName: string | null;
   viewerCount: number;
   isLive: boolean;
+  isFeatured: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -522,8 +523,19 @@ export interface CreateLiveStreamPayload {
   venueName?: string;
   sortOrder?: number;
   isLive?: boolean;
+  isFeatured?: boolean;
 }
 export type UpdateLiveStreamPayload = Partial<CreateLiveStreamPayload>;
+
+/** Opsi pertandingan dari CORE untuk penaut kanal streaming. */
+export interface MatchOption {
+  ref: string;
+  code: string;
+  label: string;
+  sportName: string | null;
+  venueName: string | null;
+  status: string;
+}
 
 /** Konten pengayaan venue. */
 export interface VenueContent {
@@ -532,6 +544,7 @@ export interface VenueContent {
   description: string;
   imageUrl: string | null;
   gallery: unknown;
+  galleryVisible: boolean;
   updatedAt: string;
 }
 
@@ -540,6 +553,7 @@ export interface UpsertVenueContentPayload {
   description: string;
   imageMediaId?: string;
   gallery?: unknown[];
+  galleryVisible?: boolean;
 }
 
 /** Hasil proxy daftar venue dari simpora2026. */

@@ -48,8 +48,8 @@ export const navGroups: NavGroup[] = [
   {
     label: 'Konten',
     items: [
-      { label: 'Artikel', to: '/articles', icon: Newspaper },
-      { label: 'Halaman', to: '/pages', icon: FileText, roles: EDITOR_UP },
+      { label: 'Berita', to: '/articles', icon: Newspaper },
+      { label: 'Laman', to: '/pages', icon: FileText, roles: EDITOR_UP },
       { label: 'Kategori', to: '/categories', icon: FolderTree, roles: EDITOR_UP },
       { label: 'Tag', to: '/tags', icon: Tags, roles: EDITOR_UP },
       { label: 'Media', to: '/media', icon: ImageIcon },

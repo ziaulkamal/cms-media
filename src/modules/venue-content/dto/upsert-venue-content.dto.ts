@@ -4,6 +4,7 @@
  */
 import {
   IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
   IsUUID,
@@ -32,4 +33,9 @@ export class UpsertVenueContentDto {
   @IsOptional()
   @IsArray()
   gallery?: unknown[];
+
+  /** Tampilkan galeri di WEB (default true). */
+  @IsOptional()
+  @IsBoolean()
+  galleryVisible?: boolean;
 }

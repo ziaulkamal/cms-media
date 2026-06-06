@@ -3,6 +3,7 @@
  * Aturan bisnis LiveStream: serving publik (+saklar), CRUD, dan toggle tayang.
  */
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { LiveStream } from '@prisma/client';
 import {
   NotFoundError,
@@ -15,6 +16,7 @@ import { UpdateLiveStreamDto } from './dto/update-live-stream.dto';
 import {
   LiveStreamPublicView,
   LiveStreamView,
+  MatchOption,
   toLiveStreamPublicView,
   toLiveStreamView,
 } from './entities/live-stream.entity';
@@ -29,10 +31,68 @@ export interface LiveStreamServing {
 /** Service LiveStream: orkestrasi kanal siaran langsung. */
 @Injectable()
 export class LiveStreamsService {
+  private readonly simporaApiUrl: string;
+
   constructor(
     private readonly repo: LiveStreamsRepository,
     private readonly gateway: RealtimeGateway,
-  ) {}
+    config: ConfigService,
+  ) {
+    this.simporaApiUrl = config.get<string>('simporaApiUrl') ?? '';
+  }
+
+  /**
+   * Daftar match (ongoing+scheduled) dari CORE utk dropdown penaut kanal admin.
+   * Gagal/timeout → array kosong (UI tetap jalan, admin bisa input manual).
+   */
+  async fetchMatchOptions(): Promise<MatchOption[]> {
+    if (!this.simporaApiUrl) return [];
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch(
+        `${this.simporaApiUrl}/matches?status=scheduled,ongoing&per_page=200`,
+        { signal: controller.signal, headers: { Accept: 'application/json' } },
+      );
+      if (!res.ok) return [];
+      return this.toMatchOptions(await res.json());
+    } catch {
+      return [];
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /** Petakan respons CORE (paginator) → opsi dropdown; toleran bentuk pembungkus. */
+  private toMatchOptions(body: unknown): MatchOption[] {
+    const data = (body as { data?: unknown })?.data;
+    const rows: unknown[] = Array.isArray(data)
+      ? data
+      : Array.isArray((data as { data?: unknown })?.data)
+        ? (data as { data: unknown[] }).data
+        : [];
+    return rows.map((row) => {
+      const m = row as Record<string, unknown>;
+      const sc = m.sportCategory as Record<string, unknown> | undefined;
+      const sport =
+        ((sc?.sport as Record<string, unknown> | undefined)?.name as string) ??
+        (sc?.name as string) ??
+        null;
+      const venue =
+        ((m.venue as Record<string, unknown> | undefined)?.name as string) ??
+        null;
+      const code = String(m.match_code ?? m.id ?? '');
+      const round = (m.round as string) ?? (sc?.name as string) ?? '';
+      return {
+        ref: String(m.id ?? ''),
+        code,
+        sportName: sport,
+        venueName: venue,
+        status: String(m.status ?? ''),
+        label: [code, sport, round].filter(Boolean).join(' · '),
+      };
+    });
+  }
 
   /** Serving publik: master saklar (dari Setting) + daftar kanal. */
   async serve(): Promise<LiveStreamServing> {
@@ -54,6 +114,7 @@ export class LiveStreamsService {
   /** Buat kanal; normalkan input YouTube menjadi video id. */
   async create(dto: CreateLiveStreamDto): Promise<LiveStreamView> {
     const youtubeId = this.normalizeYoutube(dto.youtube);
+    if (dto.isFeatured) await this.assertFeaturedLimit();
     const created = await this.repo.create({
       youtubeId,
       title: dto.title,
@@ -62,6 +123,7 @@ export class LiveStreamsService {
       venueName: dto.venueName,
       sortOrder: dto.sortOrder ?? 0,
       isLive: dto.isLive ?? false,
+      isFeatured: dto.isFeatured ?? false,
     });
     this.gateway.emitStreamUpdated();
     return toLiveStreamView(created);
@@ -69,7 +131,8 @@ export class LiveStreamsService {
 
   /** Ubah kanal (youtube opsional; bila ada, dinormalkan ulang). */
   async update(id: string, dto: UpdateLiveStreamDto): Promise<LiveStreamView> {
-    await this.getOrFail(id);
+    const current = await this.getOrFail(id);
+    if (dto.isFeatured && !current.isFeatured) await this.assertFeaturedLimit(id);
     const updated = await this.repo.update(id, {
       youtubeId: dto.youtube ? this.normalizeYoutube(dto.youtube) : undefined,
       title: dto.title,
@@ -78,6 +141,7 @@ export class LiveStreamsService {
       venueName: dto.venueName,
       sortOrder: dto.sortOrder,
       isLive: dto.isLive,
+      isFeatured: dto.isFeatured,
     });
     this.gateway.emitStreamUpdated();
     return toLiveStreamView(updated);
@@ -89,6 +153,22 @@ export class LiveStreamsService {
     const updated = await this.repo.update(id, { isLive: !current.isLive });
     this.gateway.emitStreamUpdated();
     return toLiveStreamView(updated);
+  }
+
+  /** Toggle sorotan; saat mengaktifkan, batasi maksimum 2 sorotan. */
+  async toggleFeatured(id: string): Promise<LiveStreamView> {
+    const current = await this.getOrFail(id);
+    if (!current.isFeatured) await this.assertFeaturedLimit(id);
+    const updated = await this.repo.update(id, { isFeatured: !current.isFeatured });
+    this.gateway.emitStreamUpdated();
+    return toLiveStreamView(updated);
+  }
+
+  /** Lempar bila sudah ada 2 sorotan aktif (di luar id yang dikecualikan). */
+  private async assertFeaturedLimit(excludeId?: string): Promise<void> {
+    if ((await this.repo.countFeatured(excludeId)) >= 2) {
+      throw new ValidationError('Maksimum 2 sorotan. Nonaktifkan salah satu dulu.');
+    }
   }
 
   /** Hapus kanal. */

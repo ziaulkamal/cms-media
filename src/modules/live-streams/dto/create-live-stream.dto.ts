@@ -50,4 +50,9 @@ export class CreateLiveStreamDto {
   @IsOptional()
   @IsBoolean()
   isLive?: boolean;
+
+  /** Sorotan: tampil menonjol di WEB (maks 2, ditegakkan di service). */
+  @IsOptional()
+  @IsBoolean()
+  isFeatured?: boolean;
 }
