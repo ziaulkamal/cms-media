@@ -37,4 +37,28 @@ export class GenerateDummyDto {
   @Min(0)
   @Max(100)
   gallery?: number;
+
+  /** Jumlah kanal siaran dummy (0 = lewati). */
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  liveStreams?: number;
+
+  /** Jumlah konten venue dummy (0 = lewati). */
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  venue?: number;
+
+  /** Jumlah pesan kontak dummy (0 = lewati). */
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  contact?: number;
 }

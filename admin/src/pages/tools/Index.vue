@@ -5,7 +5,10 @@ import {
   FileText,
   FolderTree,
   Images,
+  Mail,
+  MapPin,
   MessageSquare,
+  Radio,
   Tags,
   Trash2,
   TriangleAlert,
@@ -27,6 +30,9 @@ const m = useDevMutations();
 
 const articleCount = ref('10');
 const galleryCount = ref('12');
+const liveCount = ref('6');
+const venueCount = ref('6');
+const contactCount = ref('8');
 const busy = computed(() => m.generate.isPending.value || m.clear.isPending.value);
 
 /** Kartu statistik data dummy saat ini. */
@@ -37,6 +43,9 @@ const summary = computed(() => {
     articles: 0,
     comments: 0,
     gallery: 0,
+    liveStreams: 0,
+    venue: 0,
+    contact: 0,
   };
   return [
     { key: 'categories', label: 'Kategori', value: s.categories, icon: FolderTree },
@@ -44,6 +53,9 @@ const summary = computed(() => {
     { key: 'articles', label: 'Artikel', value: s.articles, icon: FileText },
     { key: 'comments', label: 'Komentar', value: s.comments, icon: MessageSquare },
     { key: 'gallery', label: 'Foto', value: s.gallery, icon: Images },
+    { key: 'liveStreams', label: 'Siaran', value: s.liveStreams, icon: Radio },
+    { key: 'venue', label: 'Venue', value: s.venue, icon: MapPin },
+    { key: 'contact', label: 'Kontak', value: s.contact, icon: Mail },
   ];
 });
 
@@ -55,6 +67,9 @@ function describe(r: DummyCounts): string {
   if (r.articles) parts.push(`${r.articles} artikel`);
   if (r.comments) parts.push(`${r.comments} komentar`);
   if (r.gallery) parts.push(`${r.gallery} foto`);
+  if (r.liveStreams) parts.push(`${r.liveStreams} siaran`);
+  if (r.venue) parts.push(`${r.venue} venue`);
+  if (r.contact) parts.push(`${r.contact} kontak`);
   return parts.length ? `${parts.join(', ')} dibuat.` : 'Tidak ada data baru.';
 }
 
@@ -74,6 +89,9 @@ const generateAll = () =>
     articles: Number(articleCount.value) || 0,
     comments: true,
     gallery: Number(galleryCount.value) || 0,
+    liveStreams: Number(liveCount.value) || 0,
+    venue: Number(venueCount.value) || 0,
+    contact: Number(contactCount.value) || 0,
   });
 
 async function onClear(): Promise<void> {
@@ -111,7 +129,7 @@ async function onClear(): Promise<void> {
       Data dummy saat ini
       <span class="text-text-subtle font-normal">— hanya yang berlabel dummy, terpisah dari data asli</span>
     </p>
-    <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+    <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
       <div
         v-for="item in summary"
         :key="item.key"
@@ -159,6 +177,27 @@ async function onClear(): Promise<void> {
               <div class="flex items-center gap-2">
                 <div class="w-20"><TextInput v-model="galleryCount" type="number" /></div>
                 <Button size="sm" variant="secondary" :disabled="busy" @click="run({ gallery: Number(galleryCount) || 0 })">Generate</Button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-3 py-3">
+              <span class="text-text-primary text-sm">Kanal siaran</span>
+              <div class="flex items-center gap-2">
+                <div class="w-20"><TextInput v-model="liveCount" type="number" /></div>
+                <Button size="sm" variant="secondary" :disabled="busy" @click="run({ liveStreams: Number(liveCount) || 0 })">Generate</Button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-3 py-3">
+              <span class="text-text-primary text-sm">Konten venue</span>
+              <div class="flex items-center gap-2">
+                <div class="w-20"><TextInput v-model="venueCount" type="number" /></div>
+                <Button size="sm" variant="secondary" :disabled="busy" @click="run({ venue: Number(venueCount) || 0 })">Generate</Button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-3 py-3">
+              <span class="text-text-primary text-sm">Pesan kontak</span>
+              <div class="flex items-center gap-2">
+                <div class="w-20"><TextInput v-model="contactCount" type="number" /></div>
+                <Button size="sm" variant="secondary" :disabled="busy" @click="run({ contact: Number(contactCount) || 0 })">Generate</Button>
               </div>
             </div>
             <div class="flex items-center justify-between gap-3 py-3 last:pb-0">

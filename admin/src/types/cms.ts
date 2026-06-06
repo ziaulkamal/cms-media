@@ -555,6 +555,9 @@ export interface DummyCounts {
   articles: number;
   comments: number;
   gallery: number;
+  liveStreams: number;
+  venue: number;
+  contact: number;
 }
 
 /** Pilihan generate data dummy (per-jenis). */
@@ -564,4 +567,7 @@ export interface GenerateDummyPayload {
   articles?: number;
   comments?: boolean;
   gallery?: number;
+  liveStreams?: number;
+  venue?: number;
+  contact?: number;
 }

@@ -8,6 +8,7 @@ import {
   ArticleStatus,
   Category,
   CommentStatus,
+  ContactStatus,
   PhotoOrientation,
   Prisma,
   Tag,
@@ -26,6 +27,9 @@ const CATEGORY_PREFIX = 'dummy-kategori-';
 const TAG_PREFIX = 'dummy-tag-';
 const ARTICLE_PREFIX = 'dummy-artikel-';
 const MEDIA_LABEL = 'DUMMY';
+const VENUE_REF_PREFIX = 'dummy-venue-';
+const LIVE_MATCHREF_PREFIX = 'dummy-live-';
+const CONTACT_EMAIL_DOMAIN = '@dummy.local';
 
 /** Ringkasan jumlah data dummy hasil generate / yang tersisa. */
 export interface DummyCounts {
@@ -34,6 +38,9 @@ export interface DummyCounts {
   articles: number;
   comments: number;
   gallery: number;
+  liveStreams: number;
+  venue: number;
+  contact: number;
 }
 
 /** Variasi dimensi foto (memicu orientasi otomatis yang berbeda). */
@@ -99,6 +106,23 @@ const PHOTO_CAPTIONS = [
   'Antusiasme suporter tuan rumah', 'Suasana venue pertandingan',
   'Penyerahan medali juara',
 ];
+// Video id YouTube valid agar thumbnail kanal dummy tampil.
+const YOUTUBE_IDS = [
+  'dQw4w9WgXcQ', '9bZkp7q19f0', '3JZ_D3ELwOQ', 'kJQP7kiw5Fk',
+  'L_jWHffIx5E', 'fJ9rUzIMcZQ',
+];
+const VENUE_NAMES = [
+  'Stadion Calang', 'GOR Lambeugak', 'Lapangan Krueng Sabee',
+  'Kolam Renang Teunom', 'Gedung Serbaguna Panga', 'Lapangan Tenis Setia Bakti',
+];
+const CONTACT_SUBJECTS = [
+  'Pertanyaan jadwal pertandingan', 'Permohonan liputan media',
+  'Usulan kerja sama', 'Keluhan tiket masuk', 'Informasi venue',
+  'Apresiasi penyelenggaraan',
+];
+const CONTACT_STATUSES = [
+  ContactStatus.NEW, ContactStatus.READ, ContactStatus.REPLIED,
+];
 
 /** Bangun body artikel TipTap dgn subjudul + paragraf & kutipan acak. */
 function buildBody(title: string): Prisma.InputJsonValue {
@@ -137,6 +161,9 @@ export class DevService {
       articles: 0,
       comments: 0,
       gallery: 0,
+      liveStreams: 0,
+      venue: 0,
+      contact: 0,
     };
 
     if (dto.categories) result.categories = (await this.ensureCategories()).length;
@@ -147,6 +174,15 @@ export class DevService {
     if (dto.comments) result.comments = await this.generateComments(userId);
     if (dto.gallery && dto.gallery > 0) {
       result.gallery = await this.generateGallery(dto.gallery, userId);
+    }
+    if (dto.liveStreams && dto.liveStreams > 0) {
+      result.liveStreams = await this.generateLiveStreams(dto.liveStreams);
+    }
+    if (dto.venue && dto.venue > 0) {
+      result.venue = await this.generateVenue(dto.venue);
+    }
+    if (dto.contact && dto.contact > 0) {
+      result.contact = await this.generateContact(dto.contact);
     }
 
     this.logger.log(`dummy.generate ${JSON.stringify(result)}`);
@@ -309,20 +345,87 @@ export class DevService {
     return created;
   }
 
+  /** Buat N kanal siaran dummy (penanda: matchRef berawalan dummy-live-). */
+  private async generateLiveStreams(n: number): Promise<number> {
+    const base = await this.prisma.liveStream.count({
+      where: { matchRef: { startsWith: LIVE_MATCHREF_PREFIX } },
+    });
+    for (let i = 0; i < n; i++) {
+      await this.prisma.liveStream.create({
+        data: {
+          youtubeId: pick(YOUTUBE_IDS),
+          title: `${pick(TITLE_SUBJECTS)} ${pick(TITLE_ACTIONS)}`,
+          sportName: pick(CATEGORY_NAMES),
+          venueName: pick(VENUE_NAMES),
+          matchRef: `${LIVE_MATCHREF_PREFIX}${base + i + 1}`,
+          viewerCount: randInt(0, 5000),
+          isLive: Math.random() < 0.4,
+          sortOrder: base + i,
+        },
+      });
+    }
+    return n;
+  }
+
+  /** Buat N konten venue dummy (penanda: venueRef berawalan dummy-venue-). */
+  private async generateVenue(n: number): Promise<number> {
+    const base = await this.prisma.venueContent.count({
+      where: { venueRef: { startsWith: VENUE_REF_PREFIX } },
+    });
+    for (let i = 0; i < n; i++) {
+      await this.prisma.venueContent.create({
+        data: {
+          venueRef: `${VENUE_REF_PREFIX}${base + i + 1}`,
+          description: `${pick(VENUE_NAMES)} — ${pick(PARAGRAPHS)} ${pick(PARAGRAPHS)}`,
+        },
+      });
+    }
+    return n;
+  }
+
+  /** Buat N pesan kontak dummy (penanda: email berdomain @dummy.local). */
+  private async generateContact(n: number): Promise<number> {
+    for (let i = 0; i < n; i++) {
+      const name = pick(COMMENTER_NAMES);
+      await this.prisma.contactMessage.create({
+        data: {
+          name,
+          email: `${name.toLowerCase()}${randInt(1, 999)}${CONTACT_EMAIL_DOMAIN}`,
+          subject: pick(CONTACT_SUBJECTS),
+          message: `${pick(PARAGRAPHS)} ${pick(PARAGRAPHS)}`,
+          status: pick(CONTACT_STATUSES),
+          ipAddress: '127.0.0.1',
+          userAgent: 'DummySeeder/1.0',
+        },
+      });
+    }
+    return n;
+  }
+
   /** Hitung data dummy yang saat ini ada. */
   async stats(): Promise<DummyCounts> {
-    const [categories, tags, articles, comments, gallery] = await Promise.all([
-      this.prisma.category.count({ where: { slug: { startsWith: CATEGORY_PREFIX } } }),
-      this.prisma.tag.count({ where: { slug: { startsWith: TAG_PREFIX } } }),
-      this.prisma.article.count({ where: { slug: { startsWith: ARTICLE_PREFIX } } }),
-      this.prisma.comment.count({
-        where: { article: { slug: { startsWith: ARTICLE_PREFIX } } },
-      }),
-      this.prisma.galleryPhoto.count({
-        where: { media: { title: { startsWith: MEDIA_LABEL } } },
-      }),
-    ]);
-    return { categories, tags, articles, comments, gallery };
+    const [categories, tags, articles, comments, gallery, liveStreams, venue, contact] =
+      await Promise.all([
+        this.prisma.category.count({ where: { slug: { startsWith: CATEGORY_PREFIX } } }),
+        this.prisma.tag.count({ where: { slug: { startsWith: TAG_PREFIX } } }),
+        this.prisma.article.count({ where: { slug: { startsWith: ARTICLE_PREFIX } } }),
+        this.prisma.comment.count({
+          where: { article: { slug: { startsWith: ARTICLE_PREFIX } } },
+        }),
+        this.prisma.galleryPhoto.count({
+          where: { media: { title: { startsWith: MEDIA_LABEL } } },
+        }),
+        this.prisma.liveStream.count({
+          where: { matchRef: { startsWith: LIVE_MATCHREF_PREFIX } },
+        }),
+        this.prisma.venueContent.count({
+          where: { venueRef: { startsWith: VENUE_REF_PREFIX } },
+        }),
+        this.prisma.contactMessage.count({
+          where: { email: { endsWith: CONTACT_EMAIL_DOMAIN } },
+        }),
+      ]);
+    return { categories, tags, articles, comments, gallery, liveStreams, venue, contact };
   }
 
   /** Hapus semua data dummy (termasuk berkas galeri di storage). */
@@ -346,6 +449,17 @@ export class DevService {
     await this.prisma.tag.deleteMany({ where: { slug: { startsWith: TAG_PREFIX } } });
     await this.prisma.category.deleteMany({
       where: { slug: { startsWith: CATEGORY_PREFIX } },
+    });
+
+    // Modul lain (tanpa relasi cascade ke yang di atas).
+    await this.prisma.liveStream.deleteMany({
+      where: { matchRef: { startsWith: LIVE_MATCHREF_PREFIX } },
+    });
+    await this.prisma.venueContent.deleteMany({
+      where: { venueRef: { startsWith: VENUE_REF_PREFIX } },
+    });
+    await this.prisma.contactMessage.deleteMany({
+      where: { email: { endsWith: CONTACT_EMAIL_DOMAIN } },
     });
 
     this.logger.log(`dummy.clear ${JSON.stringify(before)}`);

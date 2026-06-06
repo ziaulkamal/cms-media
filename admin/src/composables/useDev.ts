@@ -12,6 +12,10 @@ const AFFECTED = [
   'comments',
   'categories',
   'tags',
+  'live-streams',
+  'streaming-enabled',
+  'venue-content',
+  'contact',
 ];
 
 /** Statistik data dummy saat ini. */
