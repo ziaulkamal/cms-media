@@ -17,6 +17,7 @@ import {
   Settings,
   Tags,
   Users,
+  Wrench,
 } from 'lucide-vue-next';
 import type { Component } from 'vue';
 import type { UserRole } from '@/types/cms';
@@ -80,6 +81,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: 'Pengguna', to: '/admin/users', icon: Users, roles: ADMIN_ONLY },
       { label: 'Pengaturan', to: '/settings', icon: Settings, roles: ADMIN_ONLY },
+      { label: 'Tools', to: '/tools', icon: Wrench, roles: ADMIN_ONLY },
     ],
   },
 ];

@@ -547,3 +547,21 @@ export interface VenueSources {
   available: boolean;
   venues: unknown[];
 }
+
+/** Jumlah data dummy (hasil generate / yang tersisa). */
+export interface DummyCounts {
+  categories: number;
+  tags: number;
+  articles: number;
+  comments: number;
+  gallery: number;
+}
+
+/** Pilihan generate data dummy (per-jenis). */
+export interface GenerateDummyPayload {
+  categories?: boolean;
+  tags?: boolean;
+  articles?: number;
+  comments?: boolean;
+  gallery?: number;
+}

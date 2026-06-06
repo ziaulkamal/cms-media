@@ -145,6 +145,12 @@ const router = createRouter({
           component: () => import('@/pages/settings/Index.vue'),
           meta: { roles: ['ADMIN'] },
         },
+        {
+          path: 'tools',
+          name: 'tools',
+          component: () => import('@/pages/tools/Index.vue'),
+          meta: { roles: ['ADMIN'] },
+        },
       ],
     },
     {
