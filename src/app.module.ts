@@ -23,6 +23,8 @@ import { CommentsModule } from './modules/comments/comments.module';
 import { HealthModule } from './modules/health/health.module';
 import { PagesModule } from './modules/pages/pages.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { GalleryModule } from './modules/gallery/gallery.module';
+import { ContactModule } from './modules/contact/contact.module';
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { SettingsModule } from './modules/settings/settings.module';
     HealthModule,
     PagesModule,
     SettingsModule,
+    GalleryModule,
+    ContactModule,
   ],
   providers: [
     // Urutan penting: rate-limit -> CSRF -> autentikasi -> otorisasi (RBAC).
