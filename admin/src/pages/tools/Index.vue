@@ -106,7 +106,11 @@ async function onClear(): Promise<void> {
       Hanya tersedia di lingkungan non-produksi. Data berlabel "dummy".
     </div>
 
-    <!-- Statistik data dummy -->
+    <!-- Statistik data dummy (HANYA data berlabel dummy, bukan total) -->
+    <p class="text-text-muted mb-2 text-sm font-medium">
+      Data dummy saat ini
+      <span class="text-text-subtle font-normal">— hanya yang berlabel dummy, terpisah dari data asli</span>
+    </p>
     <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
       <div
         v-for="item in summary"
