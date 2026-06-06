@@ -16,8 +16,11 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UserRole } from '@prisma/client';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { BulkIdsDto } from '../../common/dto/bulk-ids.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { AuthenticatedUser } from '../../common/types/authenticated-user';
 import { UpdateMediaDto } from './dto/update-media.dto';
@@ -45,6 +48,13 @@ export class MediaController {
     @Body('alt') alt?: string,
   ) {
     return this.media.upload(file, user, alt);
+  }
+
+  /** Hapus banyak media sekaligus (+ berkasnya); editor ke atas. */
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Post('bulk-delete')
+  bulkRemove(@Body() dto: BulkIdsDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.media.bulkRemove(dto.ids, user);
   }
 
   @Get()

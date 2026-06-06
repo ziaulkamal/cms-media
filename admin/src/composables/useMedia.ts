@@ -39,5 +39,9 @@ export function useMediaMutations() {
       mutationFn: (id: string) => mediaApi.remove(id),
       onSuccess: invalidate,
     }),
+    bulkRemove: useMutation({
+      mutationFn: (ids: string[]) => mediaApi.bulkRemove(ids),
+      onSuccess: invalidate,
+    }),
   };
 }

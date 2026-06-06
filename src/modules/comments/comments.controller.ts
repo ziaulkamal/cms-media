@@ -5,6 +5,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -21,6 +22,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { BulkIdsDto } from '../../common/dto/bulk-ids.dto';
 import { CommentsService } from './comments.service';
 import { CommentQueryDto } from './dto/comment-query.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -123,5 +125,19 @@ export class CommentsController {
   @Patch(':id/spam')
   spam(@Param('id', ParseUUIDPipe) id: string) {
     return this.comments.markSpam(id);
+  }
+
+  /** Hapus banyak komentar sekaligus (+ balasannya). */
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Post('bulk-delete')
+  bulkRemove(@Body() dto: BulkIdsDto) {
+    return this.comments.bulkRemove(dto.ids);
+  }
+
+  /** Hapus komentar permanen (+ balasannya). */
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.comments.remove(id);
   }
 }

@@ -27,6 +27,17 @@ export class MediaRepository {
     return this.prisma.media.delete({ where: { id } });
   }
 
+  findManyByIds(ids: string[]): Promise<Media[]> {
+    return this.prisma.media.findMany({ where: { id: { in: ids } } });
+  }
+
+  async deleteMany(ids: string[]): Promise<number> {
+    const { count } = await this.prisma.media.deleteMany({
+      where: { id: { in: ids } },
+    });
+    return count;
+  }
+
   /** Satu halaman media terbaru beserta totalnya. */
   async paginate(skip: number, take: number): Promise<[Media[], number]> {
     return this.prisma.$transaction([

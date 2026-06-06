@@ -63,14 +63,21 @@ async function seedUsers(): Promise<void> {
   console.log('✓ Akun siap (admin/editor/author/kontributor).');
 }
 
-/** Rubrik induk + anak (hierarki rubrik). */
+/** Rubrik induk + anak (hierarki rubrik) + kategori default "article". */
 async function seedCategories(): Promise<void> {
+  // Kategori bawaan untuk artikel tanpa kategori (terproteksi, selalu di akar).
+  await prisma.category.upsert({
+    where: { slug: 'article' },
+    update: { isDefault: true, parentId: null },
+    create: { slug: 'article', name: 'Article', isDefault: true, position: 0 },
+  });
+
   const parents = ['Ekonomi', 'Market', 'Tech', 'Lifestyle', 'News'];
-  for (const name of parents) {
+  for (const [i, name] of parents.entries()) {
     await prisma.category.upsert({
       where: { slug: toSlug(name) },
-      update: {},
-      create: { slug: toSlug(name), name },
+      update: { position: i + 1 },
+      create: { slug: toSlug(name), name, position: i + 1 },
     });
   }
 
@@ -82,15 +89,19 @@ async function seedCategories(): Promise<void> {
     { name: 'Gadget', parent: 'Tech' },
     { name: 'AI', parent: 'Tech' },
   ];
+  // Posisi anak dihitung per induk (0,1,2,...).
+  const posByParent = new Map<string, number>();
   for (const c of children) {
     const parent = await prisma.category.findUnique({ where: { slug: toSlug(c.parent) } });
+    const pos = posByParent.get(c.parent) ?? 0;
+    posByParent.set(c.parent, pos + 1);
     await prisma.category.upsert({
       where: { slug: toSlug(c.name) },
-      update: {},
-      create: { slug: toSlug(c.name), name: c.name, parentId: parent?.id },
+      update: { position: pos },
+      create: { slug: toSlug(c.name), name: c.name, parentId: parent?.id, position: pos },
     });
   }
-  console.log('✓ Kategori (induk + anak) siap.');
+  console.log('✓ Kategori (default + induk + anak) siap.');
 }
 
 /** Tag dasar. */
@@ -316,11 +327,23 @@ async function seedPages(): Promise<void> {
   console.log('✓ Halaman statis siap (Tentang, Syarat, Privasi, Daftar Isi).');
 }
 
+/** Pindahkan artikel lama tanpa kategori ke kategori default "article". */
+async function backfillDefaultCategory(): Promise<void> {
+  const def = await prisma.category.findUnique({ where: { slug: 'article' } });
+  if (!def) return;
+  const { count } = await prisma.article.updateMany({
+    where: { categoryId: null },
+    data: { categoryId: def.id },
+  });
+  if (count > 0) console.log(`✓ ${count} artikel tanpa kategori dipindah ke "article".`);
+}
+
 async function main(): Promise<void> {
   await seedUsers();
   await seedCategories();
   await seedTags();
   await seedArticles();
+  await backfillDefaultCategory();
   await seedComments();
   await seedAds();
   await seedSettings();

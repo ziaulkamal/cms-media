@@ -40,5 +40,13 @@ export function useCommentMutations() {
       mutationFn: (id: string) => commentsApi.spam(id),
       onSuccess: invalidate,
     }),
+    remove: useMutation({
+      mutationFn: (id: string) => commentsApi.remove(id),
+      onSuccess: invalidate,
+    }),
+    bulkRemove: useMutation({
+      mutationFn: (ids: string[]) => commentsApi.bulkRemove(ids),
+      onSuccess: invalidate,
+    }),
   };
 }

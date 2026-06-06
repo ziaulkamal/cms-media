@@ -141,8 +141,21 @@ export interface Category {
   slug: string;
   name: string;
   parentId: string | null;
+  /** Urutan tampil di antara saudara (diatur via drag-and-drop). */
+  position: number;
+  /** Kategori bawaan untuk artikel tanpa kategori (terproteksi). */
+  isDefault: boolean;
+  /** Jumlah artikel yang memakai kategori ini. */
+  articleCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Satu simpul susunan baru pohon kategori (payload reorder). */
+export interface ReorderCategoryItem {
+  id: string;
+  parentId: string | null;
+  position: number;
 }
 
 /** Label/tag. */
@@ -224,6 +237,7 @@ export interface CommentModeration {
   userId: string | null;
   parentId: string | null;
   authorName: string | null;
+  authorEmail: string | null;
   body: string;
   status: CommentStatus;
   likeCount: number;

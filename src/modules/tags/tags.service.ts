@@ -48,6 +48,11 @@ export class TagsService {
     return { id };
   }
 
+  /** Hapus banyak tag sekaligus. */
+  async bulkRemove(ids: string[]): Promise<{ deleted: number }> {
+    return { deleted: await this.repo.deleteMany(ids) };
+  }
+
   /** Daftar seluruh tag. */
   list(): Promise<Tag[]> {
     return this.repo.findAll();

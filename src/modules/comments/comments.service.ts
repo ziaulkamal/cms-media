@@ -143,6 +143,21 @@ export class CommentsService {
     return this.setStatus(id, CommentStatus.SPAM);
   }
 
+  /** Hapus komentar permanen (+ balasannya via cascade); editor ke atas. */
+  async remove(id: string): Promise<{ id: string }> {
+    await this.getOrFail(id);
+    const result = await this.repo.delete(id);
+    this.audit.log(`comment.delete id=${id}`);
+    return result;
+  }
+
+  /** Hapus banyak komentar sekaligus (+ balasan via cascade). */
+  async bulkRemove(ids: string[]): Promise<{ deleted: number }> {
+    const deleted = await this.repo.deleteMany(ids);
+    this.audit.log(`comment.bulkDelete count=${deleted}`);
+    return { deleted };
+  }
+
   /** Ubah status komentar yang ada atau lempar NotFound. */
   private async setStatus(
     id: string,

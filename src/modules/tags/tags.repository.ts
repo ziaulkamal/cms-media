@@ -23,6 +23,13 @@ export class TagsRepository {
     return this.prisma.tag.delete({ where: { id } });
   }
 
+  async deleteMany(ids: string[]): Promise<number> {
+    const { count } = await this.prisma.tag.deleteMany({
+      where: { id: { in: ids } },
+    });
+    return count;
+  }
+
   findById(id: string): Promise<Tag | null> {
     return this.prisma.tag.findUnique({ where: { id } });
   }

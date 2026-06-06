@@ -17,6 +17,7 @@ import { UserRole } from '@prisma/client';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { BulkIdsDto } from '../../common/dto/bulk-ids.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateGalleryPhotoDto } from './dto/create-gallery-photo.dto';
 import { GalleryQueryDto } from './dto/gallery-query.dto';
@@ -64,6 +65,14 @@ export class GalleryController {
     @Body() dto: UpdateGalleryPhotoDto,
   ) {
     return this.gallery.updatePhoto(id, dto);
+  }
+
+  /** Hapus banyak foto galeri sekaligus. */
+  @ApiBearerAuth()
+  @Roles(...MANAGE_ROLES)
+  @Post('bulk-delete')
+  bulkRemove(@Body() dto: BulkIdsDto) {
+    return this.gallery.bulkRemovePhotos(dto.ids);
   }
 
   /** Hapus foto galeri. */

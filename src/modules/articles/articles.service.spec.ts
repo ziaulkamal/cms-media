@@ -8,6 +8,7 @@ import {
   ForbiddenError,
 } from '../../common/errors/domain-error';
 import { AuthenticatedUser } from '../../common/types/authenticated-user';
+import { CategoriesService } from '../categories/categories.service';
 import { ArticlesRepository } from './articles.repository';
 import { ArticlesService } from './articles.service';
 import { ArticleWithRelations } from './entities/article.entity';
@@ -46,7 +47,10 @@ describe('ArticlesService', () => {
     update: jest.fn(),
     publishWithRevision: jest.fn(),
   } as unknown as ArticlesRepository;
-  const service = new ArticlesService(repo);
+  const categories = {
+    getDefaultId: jest.fn().mockResolvedValue('default-cat'),
+  } as unknown as CategoriesService;
+  const service = new ArticlesService(repo, categories);
 
   const author: AuthenticatedUser = {
     id: 'u1',

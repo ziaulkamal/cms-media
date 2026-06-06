@@ -16,6 +16,7 @@ import { UserRole } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { BulkIdsDto } from '../../common/dto/bulk-ids.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { TagsService } from './tags.service';
@@ -48,6 +49,13 @@ export class TagsController {
   @Patch(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTagDto) {
     return this.tags.update(id, dto);
+  }
+
+  /** Hapus banyak tag sekaligus. */
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Post('bulk-delete')
+  bulkRemove(@Body() dto: BulkIdsDto) {
+    return this.tags.bulkRemove(dto.ids);
   }
 
   @Roles(UserRole.EDITOR, UserRole.ADMIN)

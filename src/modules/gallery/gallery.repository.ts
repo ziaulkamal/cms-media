@@ -55,6 +55,13 @@ export class GalleryRepository {
     });
   }
 
+  async deletePhotos(ids: string[]): Promise<number> {
+    const { count } = await this.prisma.galleryPhoto.deleteMany({
+      where: { id: { in: ids } },
+    });
+    return count;
+  }
+
   /** Daftar foto publik (published) dgn filter kategori/album, urut tampilan. */
   async paginatePublic(
     filter: { category?: string; albumId?: string },

@@ -26,5 +26,9 @@ export function useTagMutations() {
       mutationFn: (id: string) => tagsApi.remove(id),
       onSuccess: invalidate,
     }),
+    bulkRemove: useMutation({
+      mutationFn: (ids: string[]) => tagsApi.bulkRemove(ids),
+      onSuccess: invalidate,
+    }),
   };
 }

@@ -15,4 +15,9 @@ export const tagsApi = {
     unwrap<{ id: string }>(
       http.delete<SuccessEnvelope<{ id: string }>>(`/tags/${id}`),
     ),
+
+  bulkRemove: (ids: string[]) =>
+    unwrap<{ deleted: number }>(
+      http.post<SuccessEnvelope<{ deleted: number }>>('/tags/bulk-delete', { ids }),
+    ),
 };

@@ -31,6 +31,11 @@ export const galleryApi = {
 
   removePhoto: (id: string) => http.delete(`/gallery/${id}`),
 
+  bulkRemovePhotos: (ids: string[]) =>
+    unwrap<{ deleted: number }>(
+      http.post<SuccessEnvelope<{ deleted: number }>>('/gallery/bulk-delete', { ids }),
+    ),
+
   listAlbums: () =>
     unwrap<GalleryAlbum[]>(
       http.get<SuccessEnvelope<GalleryAlbum[]>>('/gallery/albums'),

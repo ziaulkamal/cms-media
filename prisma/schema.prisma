@@ -115,10 +115,14 @@ model User {
 
 /// Rubrik berita; mendukung hierarki via self-relation parent/children.
 model Category {
-  id       String  @id @default(uuid()) @db.Uuid
-  slug     String  @unique
-  name     String
-  parentId String? @map("parent_id") @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
+  slug      String  @unique
+  name      String
+  parentId  String? @map("parent_id") @db.Uuid
+  // Urutan tampil di antara saudara (sibling) — diatur lewat drag-and-drop.
+  position  Int     @default(0)
+  // Kategori bawaan untuk artikel tanpa kategori; terproteksi (tak bisa dihapus/dijadikan anak).
+  isDefault Boolean @default(false) @map("is_default")
 
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
   children Category[] @relation("CategoryTree")
@@ -127,7 +131,7 @@ model Category {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@index([parentId])
+  @@index([parentId, position])
   @@map("categories")
 }
 

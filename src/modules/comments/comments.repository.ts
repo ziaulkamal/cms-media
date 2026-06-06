@@ -38,6 +38,18 @@ export class CommentsRepository {
     return this.prisma.comment.update({ where: { id }, data: { status } });
   }
 
+  /** Hapus komentar; balasannya ikut terhapus (relasi onDelete: Cascade). */
+  delete(id: string): Promise<{ id: string }> {
+    return this.prisma.comment.delete({ where: { id }, select: { id: true } });
+  }
+
+  async deleteMany(ids: string[]): Promise<number> {
+    const { count } = await this.prisma.comment.deleteMany({
+      where: { id: { in: ids } },
+    });
+    return count;
+  }
+
   /** Apakah artikel ada dan sudah PUBLISHED (boleh dikomentari). */
   async isArticleCommentable(articleId: string): Promise<boolean> {
     const found = await this.prisma.article.findFirst({

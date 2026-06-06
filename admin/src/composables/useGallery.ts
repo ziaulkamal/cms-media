@@ -55,6 +55,10 @@ export function useGalleryMutations() {
       mutationFn: (id: string) => galleryApi.removePhoto(id),
       onSuccess: invalidatePhotos,
     }),
+    bulkRemovePhotos: useMutation({
+      mutationFn: (ids: string[]) => galleryApi.bulkRemovePhotos(ids),
+      onSuccess: invalidatePhotos,
+    }),
     createAlbum: useMutation({
       mutationFn: (payload: CreateAlbumPayload) => galleryApi.createAlbum(payload),
       onSuccess: invalidateAlbums,

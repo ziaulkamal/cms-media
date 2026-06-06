@@ -16,8 +16,10 @@ import { UserRole } from '@prisma/client';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { BulkIdsDto } from '../../common/dto/bulk-ids.dto';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { ReorderCategoriesDto } from './dto/reorder-categories.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
 /** Route kategori; GET publik, tulis butuh peran editor ke atas. */
@@ -44,6 +46,13 @@ export class CategoriesController {
     return this.categories.create(dto);
   }
 
+  /** Susun ulang urutan & jenjang seluruh pohon (drag-and-drop). */
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Patch('reorder')
+  reorder(@Body() dto: ReorderCategoriesDto) {
+    return this.categories.reorder(dto);
+  }
+
   @Roles(UserRole.EDITOR, UserRole.ADMIN)
   @Patch(':id')
   update(
@@ -51,6 +60,13 @@ export class CategoriesController {
     @Body() dto: UpdateCategoryDto,
   ) {
     return this.categories.update(id, dto);
+  }
+
+  /** Hapus banyak kategori sekaligus. */
+  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  @Post('bulk-delete')
+  bulkRemove(@Body() dto: BulkIdsDto) {
+    return this.categories.bulkRemove(dto.ids);
   }
 
   @Roles(UserRole.EDITOR, UserRole.ADMIN)

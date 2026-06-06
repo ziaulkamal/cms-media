@@ -1,7 +1,11 @@
 /** admin/src/composables/useCategories.ts — server-state kategori (list + CRUD). */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { categoriesApi } from '@/api/categories';
-import type { CreateCategoryPayload, UpdateCategoryPayload } from '@/types/cms';
+import type {
+  CreateCategoryPayload,
+  ReorderCategoryItem,
+  UpdateCategoryPayload,
+} from '@/types/cms';
 
 /** Daftar seluruh kategori (flat). */
 export function useCategoriesQuery() {
@@ -25,6 +29,14 @@ export function useCategoryMutations() {
     }),
     remove: useMutation({
       mutationFn: (id: string) => categoriesApi.remove(id),
+      onSuccess: invalidate,
+    }),
+    bulkRemove: useMutation({
+      mutationFn: (ids: string[]) => categoriesApi.bulkRemove(ids),
+      onSuccess: invalidate,
+    }),
+    reorder: useMutation({
+      mutationFn: (items: ReorderCategoryItem[]) => categoriesApi.reorder(items),
       onSuccess: invalidate,
     }),
   };

@@ -1,9 +1,9 @@
 <!-- admin/src/pages/gallery/Index.vue — galeri: unggah foto, atur caption/kategori/orientasi, kelola album. -->
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
-import { Pencil, Trash2 } from 'lucide-vue-next';
+import { computed, reactive, ref } from 'vue';
 import { ApiError } from '@/api/http';
 import { mediaApi } from '@/api/media';
+import { Images, Pencil, Trash2 } from 'lucide-vue-next';
 import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
@@ -12,6 +12,7 @@ import Modal from '@/components/ui/Modal.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import Pagination from '@/components/ui/Pagination.vue';
 import QueryState from '@/components/ui/QueryState.vue';
+import SelectableTile from '@/components/ui/SelectableTile.vue';
 import SelectInput from '@/components/ui/SelectInput.vue';
 import TextInput from '@/components/ui/TextInput.vue';
 import { useConfirm } from '@/composables/useConfirm';
@@ -21,6 +22,7 @@ import {
   useGalleryQuery,
 } from '@/composables/useGallery';
 import { usePagination } from '@/composables/usePagination';
+import { useSelection } from '@/composables/useSelection';
 import { useToast } from '@/composables/useToast';
 import { photoOrientationLabel, toOptions } from '@/lib/labels';
 import type { GalleryPhoto, PhotoOrientation } from '@/types/cms';
@@ -31,6 +33,29 @@ const { page } = usePagination(24);
 const { data, isLoading, error } = useGalleryQuery(page, 24);
 const { data: albums } = useAlbumsQuery();
 const m = useGalleryMutations();
+
+// Seleksi untuk hapus massal foto.
+const sel = useSelection();
+const pageIds = computed(() => (data.value?.items ?? []).map((p) => p.id));
+function toggleAll(on: boolean): void {
+  sel.setMany(pageIds.value, on);
+}
+async function onBulkDelete(): Promise<void> {
+  const ok = await confirm({
+    title: 'Hapus foto terpilih',
+    message: `${sel.count.value} foto akan dihapus dari galeri (berkas media tetap ada).`,
+    confirmText: 'Hapus',
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    await m.bulkRemovePhotos.mutateAsync(sel.ids.value);
+    sel.clear();
+    toast.success('Foto terpilih dihapus.');
+  } catch (e) {
+    toast.error(e instanceof ApiError ? e.message : 'Gagal menghapus.');
+  }
+}
 
 const orientationOptions = toOptions(photoOrientationLabel);
 const albumOptions = () =>
@@ -164,37 +189,42 @@ async function onRemoveAlbum(id: string): Promise<void> {
       :is-empty="!data || data.items.length === 0"
       empty-text="Belum ada foto. Unggah yang pertama."
     >
+      <!-- Toolbar: pilih-semua + jumlah, aksi massal muncul saat ada seleksi -->
+      <div class="border-border bg-surface mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-2.5">
+        <label class="text-text-muted flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            class="accent-primary size-4 rounded"
+            :checked="sel.allSelected(pageIds)"
+            @change="toggleAll(($event.target as HTMLInputElement).checked)"
+          />
+          <span class="inline-flex items-center gap-1.5">
+            <Images class="h-4 w-4" /> {{ data!.meta.total }} foto
+          </span>
+        </label>
+        <div v-if="sel.count.value" class="flex items-center gap-2">
+          <span class="text-text-primary text-sm font-medium">{{ sel.count.value }} dipilih</span>
+          <Button size="sm" variant="ghost" @click="sel.clear">Batal</Button>
+          <Button size="sm" variant="danger" :loading="m.bulkRemovePhotos.isPending.value" @click="onBulkDelete">
+            <Trash2 class="h-4 w-4" /> Hapus
+          </Button>
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <figure
+        <SelectableTile
           v-for="photo in data!.items"
           :key="photo.id"
-          class="group border-border bg-surface relative overflow-hidden rounded-xl border"
+          :src="photo.src"
+          :alt="photo.caption ?? 'Foto galeri'"
+          :selected="sel.has(photo.id)"
+          @toggle="sel.toggle(photo.id)"
         >
-          <img
-            :src="photo.src"
-            :alt="photo.caption ?? 'Foto galeri'"
-            loading="lazy"
-            class="aspect-square w-full object-cover"
-          />
-          <figcaption class="flex items-start justify-between gap-2 p-3">
-            <div class="min-w-0">
-              <p class="text-text-primary truncate text-sm">
-                {{ photo.caption || 'Tanpa keterangan' }}
-              </p>
-              <div class="mt-1 flex flex-wrap items-center gap-1">
-                <Badge variant="info">{{ photoOrientationLabel[photo.orientation] }}</Badge>
-                <Badge v-if="photo.category" variant="neutral">{{ photo.category }}</Badge>
-                <Badge v-if="!photo.isPublished" variant="warning">Tersembunyi</Badge>
-              </div>
-            </div>
-          </figcaption>
-          <div
-            class="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
-          >
+          <template #actions>
             <button
               type="button"
               aria-label="Ubah foto"
-              class="bg-surface/90 text-text-muted hover:text-primary flex h-8 w-8 items-center justify-center rounded-md shadow-sm"
+              class="bg-surface/90 text-text-muted hover:text-primary flex h-8 w-8 items-center justify-center rounded-lg shadow-sm backdrop-blur"
               @click="openEdit(photo)"
             >
               <Pencil class="h-4 w-4" />
@@ -202,13 +232,23 @@ async function onRemoveAlbum(id: string): Promise<void> {
             <button
               type="button"
               aria-label="Hapus foto"
-              class="bg-surface/90 text-text-muted hover:text-danger flex h-8 w-8 items-center justify-center rounded-md shadow-sm"
+              class="bg-surface/90 text-text-muted hover:text-danger flex h-8 w-8 items-center justify-center rounded-lg shadow-sm backdrop-blur"
               @click="onRemove(photo)"
             >
               <Trash2 class="h-4 w-4" />
             </button>
-          </div>
-        </figure>
+          </template>
+          <template #footer>
+            <p class="text-text-primary truncate text-sm font-medium">
+              {{ photo.caption || 'Tanpa keterangan' }}
+            </p>
+            <div class="mt-1.5 flex flex-wrap items-center gap-1">
+              <Badge variant="info">{{ photoOrientationLabel[photo.orientation] }}</Badge>
+              <Badge v-if="photo.category" variant="neutral">{{ photo.category }}</Badge>
+              <Badge v-if="!photo.isPublished" variant="warning">Tersembunyi</Badge>
+            </div>
+          </template>
+        </SelectableTile>
       </div>
 
       <div class="mt-5">

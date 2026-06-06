@@ -14,6 +14,7 @@ import {
 import { Paginated } from '../../common/interceptors/response.interceptor';
 import { AuthenticatedUser } from '../../common/types/authenticated-user';
 import { slugify } from '../../common/utils/slug';
+import { CategoriesService } from '../categories/categories.service';
 import { ArticlesRepository } from './articles.repository';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { PublishArticleDto } from './dto/publish-article.dto';
@@ -32,11 +33,16 @@ const EDITORIAL_ROLES: UserRole[] = [UserRole.ADMIN, UserRole.EDITOR];
 export class ArticlesService {
   private readonly audit = new Logger('Audit');
 
-  constructor(private readonly repo: ArticlesRepository) {}
+  constructor(
+    private readonly repo: ArticlesRepository,
+    private readonly categories: CategoriesService,
+  ) {}
 
   /** Buat artikel baru berstatus DRAFT milik pemanggil. */
   async create(dto: CreateArticleDto, user: AuthenticatedUser): Promise<ArticleView> {
     const slug = await this.generateUniqueSlug(dto.title);
+    // Tanpa kategori → masuk kategori default ("article") agar selalu terkurasi.
+    const categoryId = dto.categoryId ?? (await this.categories.getDefaultId());
     const article = await this.repo.create({
       slug,
       title: dto.title,
@@ -46,7 +52,7 @@ export class ArticlesService {
       seoDescription: dto.seoDescription,
       seoKeywords: dto.seoKeywords ?? [],
       author: { connect: { id: user.id } },
-      category: dto.categoryId ? { connect: { id: dto.categoryId } } : undefined,
+      category: { connect: { id: categoryId } },
       featuredMedia: dto.featuredMediaId
         ? { connect: { id: dto.featuredMediaId } }
         : undefined,

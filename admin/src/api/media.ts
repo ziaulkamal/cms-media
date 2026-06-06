@@ -32,6 +32,11 @@ export const mediaApi = {
     unwrap<Media>(http.patch<SuccessEnvelope<Media>>(`/media/${id}`, payload)),
 
   remove: (id: string) => http.delete(`/media/${id}`),
+
+  bulkRemove: (ids: string[]) =>
+    unwrap<{ deleted: number }>(
+      http.post<SuccessEnvelope<{ deleted: number }>>('/media/bulk-delete', { ids }),
+    ),
 };
 
 export type { Media, Paginated };

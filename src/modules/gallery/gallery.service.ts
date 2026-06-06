@@ -118,6 +118,11 @@ export class GalleryService {
     return this.repo.deletePhoto(id);
   }
 
+  /** Hapus banyak foto galeri sekaligus (berkas media tetap di Media Library). */
+  async bulkRemovePhotos(ids: string[]): Promise<{ deleted: number }> {
+    return { deleted: await this.repo.deletePhotos(ids) };
+  }
+
   private async getPhotoOrFail(id: string): Promise<void> {
     const photo = await this.repo.findPhotoById(id);
     if (!photo) throw new NotFoundError('Foto galeri tidak ditemukan.');

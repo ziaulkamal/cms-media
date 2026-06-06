@@ -35,4 +35,11 @@ export const commentsApi = {
     unwrap<CommentModeration>(
       http.patch<SuccessEnvelope<CommentModeration>>(`/comments/${id}/spam`),
     ),
+
+  remove: (id: string) => http.delete(`/comments/${id}`),
+
+  bulkRemove: (ids: string[]) =>
+    unwrap<{ deleted: number }>(
+      http.post<SuccessEnvelope<{ deleted: number }>>('/comments/bulk-delete', { ids }),
+    ),
 };

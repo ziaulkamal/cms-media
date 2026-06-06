@@ -113,6 +113,16 @@ export class MediaService {
     return { id };
   }
 
+  /** Hapus banyak media sekaligus (+ berkas storage-nya); editor ke atas. */
+  async bulkRemove(ids: string[], user: AuthenticatedUser): Promise<{ deleted: number }> {
+    const items = await this.repo.findManyByIds(ids);
+    for (const m of items) this.assertCanManage(m, user);
+    const deleted = await this.repo.deleteMany(items.map((m) => m.id));
+    // Hapus berkas fisik setelah record terhapus (abaikan kegagalan per-berkas).
+    await Promise.all(items.map((m) => this.storage.delete(m.storageKey)));
+    return { deleted };
+  }
+
   private async getOrFail(id: string): Promise<Media> {
     const media = await this.repo.findById(id);
     if (!media) throw new NotFoundError('Media tidak ditemukan.');

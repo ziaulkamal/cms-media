@@ -3,11 +3,13 @@
  * Modul Articles: controller + service + repository konten inti.
  */
 import { Module } from '@nestjs/common';
+import { CategoriesModule } from '../categories/categories.module';
 import { ArticlesController } from './articles.controller';
 import { ArticlesRepository } from './articles.repository';
 import { ArticlesService } from './articles.service';
 
 @Module({
+  imports: [CategoriesModule],
   controllers: [ArticlesController],
   providers: [ArticlesService, ArticlesRepository],
 })

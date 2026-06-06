@@ -37,6 +37,7 @@ export interface CommentModerationView {
   userId: string | null;
   parentId: string | null;
   authorName: string | null;
+  authorEmail: string | null; // internal moderasi; tak diekspos ke publik
   body: string;
   status: string;
   likeCount: number;
@@ -108,6 +109,7 @@ export function toCommentModerationView(
     userId: c.userId,
     parentId: c.parentId,
     authorName: c.authorName,
+    authorEmail: c.authorEmail,
     body: c.body,
     status: c.status,
     likeCount: c.likeCount,

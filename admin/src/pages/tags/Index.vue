@@ -3,6 +3,7 @@
 import { Pencil, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { ApiError } from '@/api/http';
+import BulkActionBar from '@/components/ui/BulkActionBar.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import Modal from '@/components/ui/Modal.vue';
@@ -11,6 +12,7 @@ import Pagination from '@/components/ui/Pagination.vue';
 import QueryState from '@/components/ui/QueryState.vue';
 import TextInput from '@/components/ui/TextInput.vue';
 import { useConfirm } from '@/composables/useConfirm';
+import { useSelection } from '@/composables/useSelection';
 import { useTagMutations, useTagsQuery } from '@/composables/useTags';
 import { useToast } from '@/composables/useToast';
 import type { Tag } from '@/types/cms';
@@ -20,9 +22,32 @@ const PER_PAGE = 10;
 const toast = useToast();
 const { confirm } = useConfirm();
 const { data, isLoading, error } = useTagsQuery();
-const { create, update, remove } = useTagMutations();
+const { create, update, remove, bulkRemove } = useTagMutations();
 const name = ref('');
 const page = ref(1);
+
+// Seleksi untuk hapus massal tag (pilih-semua mengikuti halaman aktif).
+const sel = useSelection();
+const pageIds = computed(() => pagedTags.value.map((t) => t.id));
+function toggleAll(on: boolean): void {
+  sel.setMany(pageIds.value, on);
+}
+async function onBulkDelete(): Promise<void> {
+  const ok = await confirm({
+    title: 'Hapus tag terpilih',
+    message: `${sel.count.value} tag akan dihapus dan dilepas dari semua artikel.`,
+    confirmText: 'Hapus',
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    await bulkRemove.mutateAsync(sel.ids.value);
+    sel.clear();
+    toast.success('Tag terpilih dihapus.');
+  } catch (e) {
+    toast.error(e instanceof ApiError ? e.message : 'Gagal menghapus.');
+  }
+}
 
 const editOpen = ref(false);
 const editId = ref<string | null>(null);
@@ -106,12 +131,31 @@ async function onDelete(tag: Tag): Promise<void> {
           :is-empty="total === 0"
           empty-text="Belum ada tag."
         >
+          <label v-if="pagedTags.length" class="text-text-muted mb-3 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              class="accent-primary size-4 rounded"
+              :checked="sel.allSelected(pageIds)"
+              @change="toggleAll(($event.target as HTMLInputElement).checked)"
+            />
+            Pilih semua di halaman
+          </label>
+
+          <BulkActionBar :count="sel.count.value" :busy="bulkRemove.isPending.value" @delete="onBulkDelete" @clear="sel.clear" />
+
           <ul class="flex flex-wrap gap-2">
             <li
               v-for="tag in pagedTags"
               :key="tag.id"
               class="bg-bg-subtle text-text-primary group flex items-center gap-2 rounded-full py-1 pl-3 pr-1.5 text-sm"
+              :class="sel.has(tag.id) ? 'ring-primary ring-2' : ''"
             >
+              <input
+                type="checkbox"
+                class="accent-primary size-3.5 rounded"
+                :checked="sel.has(tag.id)"
+                @change="sel.toggle(tag.id)"
+              />
               {{ tag.name }}
               <span class="text-text-subtle text-xs">/{{ tag.slug }}</span>
               <span class="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
