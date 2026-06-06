@@ -212,20 +212,27 @@ model Revision {
   @@map("revisions")
 }
 
-/// Komentar pembaca dengan moderasi.
+/// Komentar pembaca dengan moderasi; mendukung balasan berjenjang & suka.
 model Comment {
-  id         String        @id @default(uuid()) @db.Uuid
-  articleId  String        @map("article_id") @db.Uuid
-  userId     String?       @map("user_id") @db.Uuid
-  authorName String?       @map("author_name")
-  body       String
-  status     CommentStatus @default(PENDING)
-  createdAt  DateTime      @default(now()) @map("created_at")
+  id          String        @id @default(uuid()) @db.Uuid
+  articleId   String        @map("article_id") @db.Uuid
+  userId      String?       @map("user_id") @db.Uuid
+  parentId    String?       @map("parent_id") @db.Uuid
+  authorName  String?       @map("author_name")
+  // Email pengomentar; INTERNAL — tidak pernah dikembalikan ke publik.
+  authorEmail String?       @map("author_email")
+  body        String
+  status      CommentStatus @default(PENDING)
+  likeCount   Int           @default(0) @map("like_count")
+  createdAt   DateTime      @default(now()) @map("created_at")
 
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  article Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user    User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
 
   @@index([articleId, status])
+  @@index([parentId])
   @@map("comments")
 }
 

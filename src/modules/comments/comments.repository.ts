@@ -16,6 +16,11 @@ export type CommentWithArticle = Prisma.CommentGetPayload<{
   include: { article: { select: { id: true; title: true; slug: true } } };
 }>;
 
+/** Comment + relasi user (untuk deteksi badge panitia saat membangun tree). */
+export type CommentWithUser = Prisma.CommentGetPayload<{
+  include: { user: { select: { id: true; role: true } } };
+}>;
+
 /** Repository Comment: pembungkus query Prisma untuk komentar & moderasi. */
 @Injectable()
 export class CommentsRepository {
@@ -40,6 +45,41 @@ export class CommentsRepository {
       select: { id: true },
     });
     return found !== null;
+  }
+
+  /** Id artikel PUBLISHED berdasarkan slug, atau null bila tak layak. */
+  async findPublishedArticleIdBySlug(slug: string): Promise<string | null> {
+    const found = await this.prisma.article.findFirst({
+      where: { slug, status: ArticleStatus.PUBLISHED },
+      select: { id: true },
+    });
+    return found?.id ?? null;
+  }
+
+  /** Semua komentar APPROVED suatu artikel (datar) + relasi user, terlama dulu. */
+  findApprovedForTree(articleId: string): Promise<CommentWithUser[]> {
+    return this.prisma.comment.findMany({
+      where: { articleId, status: CommentStatus.APPROVED },
+      include: { user: { select: { id: true, role: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  /** Komentar APPROVED tunggal milik artikel (validasi parent balasan). */
+  findApprovedById(id: string, articleId: string): Promise<Comment | null> {
+    return this.prisma.comment.findFirst({
+      where: { id, articleId, status: CommentStatus.APPROVED },
+    });
+  }
+
+  /** Naikkan likeCount komentar APPROVED secara atomik; null bila tak ada. */
+  async incrementLike(id: string): Promise<Comment | null> {
+    const result = await this.prisma.comment.updateMany({
+      where: { id, status: CommentStatus.APPROVED },
+      data: { likeCount: { increment: 1 } },
+    });
+    if (result.count === 0) return null;
+    return this.prisma.comment.findUnique({ where: { id } });
   }
 
   /** Daftar komentar APPROVED sebuah artikel (publik), terbaru dulu. */

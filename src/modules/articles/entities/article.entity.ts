@@ -4,6 +4,10 @@
  */
 import { Prisma } from '@prisma/client';
 import { mediaPublicUrl } from '../../../common/utils/media-url';
+import {
+  ContentBlock,
+  toContentBlocks,
+} from '../../../common/utils/content-blocks';
 
 /** Relasi yang selalu disertakan saat mengambil artikel. */
 export const articleInclude = {
@@ -27,6 +31,8 @@ export interface ArticleView {
   title: string;
   excerpt: string | null;
   body: unknown;
+  // Body ternormalisasi sebagai blok (paragraf/subjudul/kutipan) untuk render FE.
+  blocks: ContentBlock[];
   status: string;
   seoTitle: string | null;
   seoDescription: string | null;
@@ -48,6 +54,7 @@ export function toArticleView(a: ArticleWithRelations): ArticleView {
     title: a.title,
     excerpt: a.excerpt,
     body: a.body,
+    blocks: toContentBlocks(a.body),
     status: a.status,
     seoTitle: a.seoTitle,
     seoDescription: a.seoDescription,

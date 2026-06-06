@@ -262,6 +262,25 @@ async function seedSettings(): Promise<void> {
     { key: 'posts_per_page', value: 12, type: SettingType.NUMBER, group: 'general', label: 'Artikel per Halaman', isPublic: false },
     { key: 'comments_enabled', value: true, type: SettingType.BOOLEAN, group: 'general', label: 'Aktifkan Komentar', isPublic: false },
     { key: 'social_twitter', value: 'https://twitter.com/cmsmedia', type: SettingType.URL, group: 'social', label: 'Twitter/X', isPublic: true },
+
+    // FASE 10.A — identitas event PORA (publik; dikonsumsi FE PoraAcehJaya).
+    { key: 'event_edisi', value: 'XXI', type: SettingType.STRING, group: 'event', label: 'Edisi Event', isPublic: true },
+    { key: 'event_nama_panjang', value: 'Pekan Olahraga Aceh', type: SettingType.STRING, group: 'event', label: 'Nama Panjang Event', isPublic: true },
+    { key: 'event_tuan_rumah', value: 'Kabupaten Aceh Jaya', type: SettingType.STRING, group: 'event', label: 'Tuan Rumah', isPublic: true },
+    { key: 'event_kota', value: 'Calang', type: SettingType.STRING, group: 'event', label: 'Kota Penyelenggara', isPublic: true },
+    { key: 'event_tanggal_mulai', value: '2026-08-01', type: SettingType.STRING, group: 'event', label: 'Tanggal Mulai', isPublic: true },
+    { key: 'event_tanggal_selesai', value: '2026-08-12', type: SettingType.STRING, group: 'event', label: 'Tanggal Selesai', isPublic: true },
+    { key: 'event_tagline', value: 'Bersatu, Berprestasi, Berjaya', type: SettingType.STRING, group: 'event', label: 'Tagline Event', isPublic: true },
+
+    // FASE 10.A — tautan media sosial (publik).
+    { key: 'social_facebook', value: 'https://facebook.com/poraacehjaya', type: SettingType.URL, group: 'social', label: 'Facebook', isPublic: true },
+    { key: 'social_instagram', value: 'https://instagram.com/poraacehjaya', type: SettingType.URL, group: 'social', label: 'Instagram', isPublic: true },
+    { key: 'social_threads', value: 'https://threads.net/@poraacehjaya', type: SettingType.URL, group: 'social', label: 'Threads', isPublic: true },
+    { key: 'social_tiktok', value: 'https://tiktok.com/@poraacehjaya', type: SettingType.URL, group: 'social', label: 'TikTok', isPublic: true },
+    { key: 'social_x', value: 'https://x.com/poraacehjaya', type: SettingType.URL, group: 'social', label: 'X (Twitter)', isPublic: true },
+
+    // FASE 10.A — master saklar siaran langsung (publik; dibaca FE & /live-streams).
+    { key: 'streaming_enabled', value: false, type: SettingType.BOOLEAN, group: 'streaming', label: 'Aktifkan Siaran Langsung', isPublic: true },
   ];
   for (const s of settings) {
     await prisma.setting.upsert({ where: { key: s.key }, update: {}, create: s });
@@ -275,6 +294,7 @@ async function seedPages(): Promise<void> {
     { title: 'Tentang Kami', mandatory: false },
     { title: 'Syarat & Ketentuan', mandatory: true },
     { title: 'Kebijakan Privasi', mandatory: true },
+    { title: 'Kebijakan Cookie', mandatory: true },
     { title: 'Daftar Isi', mandatory: true },
   ];
   for (const p of pages) {

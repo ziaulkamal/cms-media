@@ -3,12 +3,13 @@
  * Modul Comments: controller + service + repository komentar pembaca.
  */
 import { Module } from '@nestjs/common';
+import { ArticleCommentsController } from './article-comments.controller';
 import { CommentsController } from './comments.controller';
 import { CommentsRepository } from './comments.repository';
 import { CommentsService } from './comments.service';
 
 @Module({
-  controllers: [CommentsController],
+  controllers: [CommentsController, ArticleCommentsController],
   providers: [CommentsService, CommentsRepository],
 })
 export class CommentsModule {}

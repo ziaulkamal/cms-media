@@ -12,9 +12,12 @@ import {
 import { Paginated } from '../../common/interceptors/response.interceptor';
 import { CommentsRepository } from './comments.repository';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { CreatePublicCommentDto } from './dto/create-public-comment.dto';
 import {
+  buildCommentTree,
   CommentModerationStats,
   CommentModerationView,
+  CommentTreeView,
   CommentView,
   toCommentModerationView,
   toCommentView,
@@ -39,6 +42,52 @@ export class CommentsService {
       status: CommentStatus.PENDING,
     });
     return toCommentModerationView(comment);
+  }
+
+  /** Pohon komentar APPROVED suatu artikel (publik, via slug); tanpa email. */
+  async listTreeBySlug(slug: string): Promise<CommentTreeView[]> {
+    const articleId = await this.repo.findPublishedArticleIdBySlug(slug);
+    if (!articleId) throw new NotFoundError('Artikel tidak ditemukan.');
+    return buildCommentTree(await this.repo.findApprovedForTree(articleId));
+  }
+
+  /** Tulis komentar/balasan publik via slug; antre PENDING (rate-limited). */
+  async createBySlug(
+    slug: string,
+    dto: CreatePublicCommentDto,
+  ): Promise<CommentModerationView> {
+    const articleId = await this.repo.findPublishedArticleIdBySlug(slug);
+    if (!articleId) {
+      throw new ValidationError('Artikel tidak ditemukan atau belum terbit.');
+    }
+    // Balasan hanya boleh menempel pada komentar APPROVED di artikel yang sama.
+    if (dto.parentId) {
+      const parent = await this.repo.findApprovedById(dto.parentId, articleId);
+      if (!parent) throw new ValidationError('Komentar induk tidak valid.');
+    }
+
+    const comment = await this.repo.create({
+      article: { connect: { id: articleId } },
+      parent: dto.parentId ? { connect: { id: dto.parentId } } : undefined,
+      authorName: dto.authorName,
+      authorEmail: dto.authorEmail,
+      body: dto.body,
+      status: CommentStatus.PENDING,
+    });
+    return toCommentModerationView(comment);
+  }
+
+  /** Tambah suka pada komentar APPROVED (dedup ditangani di controller). */
+  async like(id: string): Promise<{ id: string; likeCount: number }> {
+    const updated = await this.repo.incrementLike(id);
+    if (!updated) throw new NotFoundError('Komentar tidak ditemukan.');
+    return { id: updated.id, likeCount: updated.likeCount };
+  }
+
+  /** Jumlah suka komentar saat ini (untuk respons idempoten saat sudah disukai). */
+  async likeCount(id: string): Promise<number> {
+    const comment = await this.getOrFail(id);
+    return comment.likeCount;
   }
 
   /** Daftar komentar APPROVED sebuah artikel (publik). */
