@@ -105,6 +105,22 @@ export const SETTING_TYPES: SettingType[] = [
   'URL',
 ];
 
+export type PhotoOrientation = 'POTRET' | 'LANSKAP' | 'KOTAK';
+export const PHOTO_ORIENTATIONS: PhotoOrientation[] = [
+  'POTRET',
+  'LANSKAP',
+  'KOTAK',
+];
+
+export type ContactStatus = 'NEW' | 'READ' | 'REPLIED' | 'SPAM' | 'ARCHIVED';
+export const CONTACT_STATUSES: ContactStatus[] = [
+  'NEW',
+  'READ',
+  'REPLIED',
+  'SPAM',
+  'ARCHIVED',
+];
+
 // ============================================================
 // Entity views (bentuk yang dikembalikan API)
 // ============================================================
@@ -206,9 +222,11 @@ export interface CommentModeration {
   id: string;
   articleId: string;
   userId: string | null;
+  parentId: string | null;
   authorName: string | null;
   body: string;
   status: CommentStatus;
+  likeCount: number;
   createdAt: string;
   article: CommentArticleRef | null;
 }
@@ -403,3 +421,129 @@ export interface CreatePagePayload {
   isMandatory?: boolean;
 }
 export type UpdatePagePayload = Partial<CreatePagePayload>;
+
+// ============================================================
+// FASE 10 — Gallery, Contact, LiveStream, VenueContent
+// ============================================================
+
+/** Foto galeri (view admin lengkap). */
+export interface GalleryPhoto {
+  id: string;
+  mediaId: string;
+  src: string;
+  caption: string | null;
+  category: string | null;
+  orientation: PhotoOrientation;
+  albumId: string | null;
+  sortOrder: number;
+  isPublished: boolean;
+  createdAt: string;
+}
+
+/** Album galeri (ringkas: cover + jumlah foto). */
+export interface GalleryAlbum {
+  id: string;
+  slug: string;
+  title: string;
+  coverUrl: string | null;
+  photoCount: number;
+  createdAt: string;
+}
+
+export interface CreateGalleryPhotoPayload {
+  mediaId: string;
+  caption?: string;
+  category?: string;
+  orientation?: PhotoOrientation;
+  albumId?: string;
+  sortOrder?: number;
+  isPublished?: boolean;
+}
+export type UpdateGalleryPhotoPayload = Partial<
+  Omit<CreateGalleryPhotoPayload, 'mediaId'>
+>;
+
+export interface CreateAlbumPayload {
+  title: string;
+  coverMediaId?: string;
+}
+export type UpdateAlbumPayload = Partial<CreateAlbumPayload>;
+
+/** Pesan kontak (inbox admin). */
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: ContactStatus;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+/** Rekap jumlah pesan kontak per status. */
+export interface ContactStats {
+  total: number;
+  new: number;
+  read: number;
+  replied: number;
+  spam: number;
+  archived: number;
+}
+
+export interface ContactQuery {
+  page?: number;
+  perPage?: number;
+  status?: ContactStatus;
+}
+
+/** Kanal siaran langsung (view admin lengkap). */
+export interface LiveStream {
+  id: string;
+  youtubeId: string;
+  sportName: string | null;
+  matchRef: string | null;
+  title: string;
+  venueName: string | null;
+  viewerCount: number;
+  isLive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLiveStreamPayload {
+  /** URL YouTube (di-paste) atau video id; dinormalkan di backend. */
+  youtube: string;
+  title: string;
+  sportName?: string;
+  matchRef?: string;
+  venueName?: string;
+  sortOrder?: number;
+  isLive?: boolean;
+}
+export type UpdateLiveStreamPayload = Partial<CreateLiveStreamPayload>;
+
+/** Konten pengayaan venue. */
+export interface VenueContent {
+  id: string;
+  venueRef: string;
+  description: string;
+  imageUrl: string | null;
+  gallery: unknown;
+  updatedAt: string;
+}
+
+export interface UpsertVenueContentPayload {
+  venueRef: string;
+  description: string;
+  imageMediaId?: string;
+  gallery?: unknown[];
+}
+
+/** Hasil proxy daftar venue dari simpora2026. */
+export interface VenueSources {
+  available: boolean;
+  venues: unknown[];
+}

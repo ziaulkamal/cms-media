@@ -101,6 +101,30 @@ const router = createRouter({
           meta: { roles: ['ADMIN', 'EDITOR'] },
         },
         {
+          path: 'gallery',
+          name: 'gallery',
+          component: () => import('@/pages/gallery/Index.vue'),
+          meta: { roles: ['ADMIN', 'EDITOR', 'AUTHOR'] },
+        },
+        {
+          path: 'contact',
+          name: 'contact',
+          component: () => import('@/pages/contact/Index.vue'),
+          meta: { roles: ['ADMIN', 'EDITOR'] },
+        },
+        {
+          path: 'live-streams',
+          name: 'live-streams',
+          component: () => import('@/pages/live-streams/Index.vue'),
+          meta: { roles: ['ADMIN', 'EDITOR', 'AUTHOR'] },
+        },
+        {
+          path: 'venue-content',
+          name: 'venue-content',
+          component: () => import('@/pages/venue-content/Index.vue'),
+          meta: { roles: ['ADMIN', 'EDITOR'] },
+        },
+        {
           path: 'ads',
           name: 'ads',
           component: () => import('@/pages/ads/Index.vue'),

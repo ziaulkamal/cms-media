@@ -9,7 +9,9 @@ import type {
   AdPlatform,
   ArticleStatus,
   CommentStatus,
+  ContactStatus,
   PageStatus,
+  PhotoOrientation,
   SettingType,
   UserRole,
 } from '@/types/cms';
@@ -94,6 +96,28 @@ export const userRoleVariant: Record<UserRole, BadgeVariant> = {
   EDITOR: 'info',
   AUTHOR: 'success',
   CONTRIBUTOR: 'neutral',
+};
+
+export const photoOrientationLabel: Record<PhotoOrientation, string> = {
+  POTRET: 'Potret',
+  LANSKAP: 'Lanskap',
+  KOTAK: 'Kotak',
+};
+
+export const contactStatusLabel: Record<ContactStatus, string> = {
+  NEW: 'Baru',
+  READ: 'Dibaca',
+  REPLIED: 'Dibalas',
+  SPAM: 'Spam',
+  ARCHIVED: 'Arsip',
+};
+
+export const contactStatusVariant: Record<ContactStatus, BadgeVariant> = {
+  NEW: 'info',
+  READ: 'neutral',
+  REPLIED: 'success',
+  SPAM: 'danger',
+  ARCHIVED: 'neutral',
 };
 
 export const settingTypeLabel: Record<SettingType, string> = {

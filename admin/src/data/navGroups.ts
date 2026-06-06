@@ -6,10 +6,14 @@ import {
   FileText,
   FolderTree,
   Image as ImageIcon,
+  Images,
   LayoutDashboard,
+  Mail,
+  MapPin,
   Megaphone,
   MessageSquare,
   Newspaper,
+  Radio,
   Settings,
   Tags,
   Users,
@@ -32,6 +36,7 @@ export interface NavGroup {
 }
 
 const EDITOR_UP: UserRole[] = ['ADMIN', 'EDITOR'];
+const AUTHOR_UP: UserRole[] = ['ADMIN', 'EDITOR', 'AUTHOR'];
 const ADMIN_ONLY: UserRole[] = ['ADMIN'];
 
 export const navGroups: NavGroup[] = [
@@ -47,12 +52,21 @@ export const navGroups: NavGroup[] = [
       { label: 'Kategori', to: '/categories', icon: FolderTree, roles: EDITOR_UP },
       { label: 'Tag', to: '/tags', icon: Tags, roles: EDITOR_UP },
       { label: 'Media', to: '/media', icon: ImageIcon },
+      { label: 'Galeri', to: '/gallery', icon: Images, roles: AUTHOR_UP },
     ],
   },
   {
     label: 'Moderasi',
     items: [
       { label: 'Komentar', to: '/comments', icon: MessageSquare, roles: EDITOR_UP },
+      { label: 'Kontak', to: '/contact', icon: Mail, roles: EDITOR_UP },
+    ],
+  },
+  {
+    label: 'Siaran & Venue',
+    items: [
+      { label: 'Live Streaming', to: '/live-streams', icon: Radio, roles: AUTHOR_UP },
+      { label: 'Venue', to: '/venue-content', icon: MapPin, roles: EDITOR_UP },
     ],
   },
   {

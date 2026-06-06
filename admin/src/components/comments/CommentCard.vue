@@ -1,7 +1,7 @@
 <!-- admin/src/components/comments/CommentCard.vue — kartu komentar moderasi (artikel asal, terbit, aksi). -->
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Check, Clock, FileText, ShieldAlert } from 'lucide-vue-next';
+import { Check, Clock, CornerDownRight, FileText, Heart, ShieldAlert } from 'lucide-vue-next';
 import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
 import { commentStatusLabel, commentStatusVariant } from '@/lib/labels';
@@ -51,9 +51,14 @@ const accent = computed(
           </span>
         </div>
       </div>
-      <Badge :variant="commentStatusVariant[comment.status]">
-        {{ commentStatusLabel[comment.status] }}
-      </Badge>
+      <div class="flex shrink-0 items-center gap-1.5">
+        <Badge v-if="comment.parentId" variant="info">
+          <CornerDownRight class="h-3 w-3" /> Balasan
+        </Badge>
+        <Badge :variant="commentStatusVariant[comment.status]">
+          {{ commentStatusLabel[comment.status] }}
+        </Badge>
+      </div>
     </header>
 
     <RouterLink
@@ -68,6 +73,13 @@ const accent = computed(
 
     <p class="text-text-primary whitespace-pre-line text-sm leading-relaxed">
       {{ comment.body }}
+    </p>
+
+    <p
+      v-if="comment.likeCount > 0"
+      class="text-text-subtle mt-2 flex items-center gap-1 text-xs"
+    >
+      <Heart class="h-3.5 w-3.5" />{{ comment.likeCount }} suka
     </p>
 
     <footer class="mt-4 flex gap-2">
