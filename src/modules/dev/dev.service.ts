@@ -52,36 +52,69 @@ const randColor = (): [number, number, number] => [
   randInt(60, 220),
 ];
 
-/** Bangun body artikel TipTap dari judul + paragraf (subjudul + kutipan demo). */
+// --- Kumpulan kata untuk konten dummy bervariasi (bukan string tunggal). ---
+const CATEGORY_NAMES = [
+  'Sepak Bola', 'Bulu Tangkis', 'Atletik', 'Renang', 'Bola Voli',
+  'Pencak Silat', 'Karate', 'Catur', 'Tenis Meja', 'Panahan',
+];
+const TAG_NAMES = [
+  'PORA', 'Aceh Jaya', 'Medali Emas', 'Pembukaan', 'Final',
+  'Tuan Rumah', 'Atlet Muda', 'Rekor', 'Semifinal', 'Penutupan',
+];
+const TITLE_SUBJECTS = [
+  'Tim Putra', 'Tim Putri', 'Kontingen Aceh Jaya', 'Atlet Senior',
+  'Tuan Rumah', 'Wasit', 'Panitia', 'Pelatih Kepala',
+];
+const TITLE_ACTIONS = [
+  'Raih Emas di Hari Pertama', 'Lolos ke Babak Final', 'Pecahkan Rekor Daerah',
+  'Tatap Laga Penentuan', 'Siapkan Strategi Baru', 'Sambut Antusiasme Suporter',
+  'Tutup Laga dengan Kemenangan', 'Jalani Latihan Intensif',
+];
+const PARAGRAPHS = [
+  'Pertandingan berlangsung sengit sejak menit awal dan disambut antusias penonton.',
+  'Panitia memastikan seluruh venue siap dan jadwal berjalan sesuai rencana.',
+  'Para atlet menunjukkan performa terbaik demi mengharumkan nama daerahnya.',
+  'Dukungan suporter menjadi energi tambahan bagi kontingen tuan rumah.',
+  'Hasil ini menambah perolehan medali dan memperketat persaingan klasemen.',
+  'Pelatih menilai kerja keras tim membuahkan hasil yang membanggakan.',
+];
+const QUOTES = [
+  'Kami bangga dengan perjuangan seluruh atlet hari ini.',
+  'Target kami jelas: tampil maksimal di setiap pertandingan.',
+  'Dukungan masyarakat sangat berarti bagi tim.',
+];
+const COMMENT_BODIES = [
+  'Selamat untuk para atlet, luar biasa!', 'Semoga menang terus, semangat!',
+  'Pertandingan tadi seru sekali.', 'Bangga jadi tuan rumah PORA.',
+  'Ditunggu laga berikutnya.', 'Kerja keras yang terbayar.',
+  'Suporter tuan rumah memang luar biasa.', 'Semoga membawa pulang emas.',
+];
+const COMMENTER_NAMES = [
+  'Rahmat', 'Siti', 'Fauzan', 'Nadia', 'Iqbal', 'Dewi', 'Andi', 'Maya',
+  'Rizki', 'Putri', 'Hendra', 'Lia',
+];
+const PHOTO_CATEGORIES = ['Pembukaan', 'Pertandingan', 'Suporter', 'Venue', 'Medali'];
+const PHOTO_CAPTIONS = [
+  'Momen pembukaan yang meriah', 'Aksi atlet di lapangan',
+  'Antusiasme suporter tuan rumah', 'Suasana venue pertandingan',
+  'Penyerahan medali juara',
+];
+
+/** Bangun body artikel TipTap dgn subjudul + paragraf & kutipan acak. */
 function buildBody(title: string): Prisma.InputJsonValue {
+  const paras = [pick(PARAGRAPHS), pick(PARAGRAPHS)];
   return {
     type: 'doc',
     content: [
       { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: title }] },
-      {
-        type: 'paragraph',
-        content: [
-          {
-            type: 'text',
-            text: 'Ini paragraf konten dummy untuk pengembangan dan pratinjau tata letak.',
-          },
-        ],
-      },
+      { type: 'paragraph', content: [{ type: 'text', text: paras[0] }] },
       {
         type: 'blockquote',
         content: [
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: 'Kutipan contoh pada artikel dummy.' }],
-          },
+          { type: 'paragraph', content: [{ type: 'text', text: pick(QUOTES) }] },
         ],
       },
-      {
-        type: 'paragraph',
-        content: [
-          { type: 'text', text: 'Paragraf penutup dummy sebagai pelengkap isi.' },
-        ],
-      },
+      { type: 'paragraph', content: [{ type: 'text', text: paras[1] }] },
     ],
   };
 }
@@ -129,7 +162,7 @@ export class DevService {
         await this.prisma.category.upsert({
           where: { slug },
           update: {},
-          create: { slug, name: `Dummy Kategori ${i}` },
+          create: { slug, name: CATEGORY_NAMES[i - 1] },
         }),
       );
     }
@@ -145,7 +178,7 @@ export class DevService {
         await this.prisma.tag.upsert({
           where: { slug },
           update: {},
-          create: { slug, name: `Dummy Tag ${i}` },
+          create: { slug, name: TAG_NAMES[i - 1] },
         }),
       );
     }
@@ -163,8 +196,8 @@ export class DevService {
     let created = 0;
     for (let i = 0; i < n; i++) {
       const idx = base + i + 1;
-      const title = `DUMMY Artikel ${idx}`;
-      const slug = `${ARTICLE_PREFIX}${idx}-${slugify(String(Date.now() + i))}`;
+      const title = `${pick(TITLE_SUBJECTS)} ${pick(TITLE_ACTIONS)}`;
+      const slug = `${ARTICLE_PREFIX}${idx}-${slugify(title)}-${Date.now() + i}`;
       const tagSubset = tags
         .filter(() => Math.random() < 0.3)
         .slice(0, 3)
@@ -174,7 +207,7 @@ export class DevService {
         data: {
           slug,
           title,
-          excerpt: 'Ringkasan artikel dummy untuk pengembangan.',
+          excerpt: pick(PARAGRAPHS),
           body: buildBody(title),
           status: ArticleStatus.PUBLISHED,
           publishedAt: new Date(),
@@ -210,8 +243,8 @@ export class DevService {
         const root = await this.prisma.comment.create({
           data: {
             article: { connect: { id: article.id } },
-            authorName: `DUMMY Pembaca ${randInt(1, 999)}`,
-            body: 'Komentar dummy yang sudah disetujui.',
+            authorName: pick(COMMENTER_NAMES),
+            body: pick(COMMENT_BODIES),
             status: CommentStatus.APPROVED,
             likeCount: randInt(0, 50),
           },
@@ -223,8 +256,8 @@ export class DevService {
             data: {
               article: { connect: { id: article.id } },
               parent: { connect: { id: root.id } },
-              authorName: `DUMMY Pembalas ${randInt(1, 999)}`,
-              body: 'Balasan dummy berjenjang.',
+              authorName: pick(COMMENTER_NAMES),
+              body: pick(COMMENT_BODIES),
               status: CommentStatus.APPROVED,
               likeCount: randInt(0, 20),
             },
@@ -264,8 +297,8 @@ export class DevService {
       await this.prisma.galleryPhoto.create({
         data: {
           media: { connect: { id: media.id } },
-          caption: 'DUMMY keterangan foto galeri',
-          category: pick(['Pembukaan', 'Pertandingan', 'Suporter', 'Venue']),
+          caption: pick(PHOTO_CAPTIONS),
+          category: pick(PHOTO_CATEGORIES),
           orientation: dim.o,
           sortOrder: i,
           isPublished: true,
