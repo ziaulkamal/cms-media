@@ -48,6 +48,8 @@ export class ShareController {
     const frontend = (str(map.frontend_url) || origin).replace(/\/+$/, '');
     const siteName = str(map.site_title) || 'PORA Aceh Jaya';
     const target = `${frontend}/#/berita/${encodeURIComponent(slug)}`;
+    // Fallback gambar share = no-image bawaan WEB (URL publik & stabil).
+    const noImage = `${frontend}/no-image.png`;
 
     if (!article) {
       res
@@ -57,7 +59,7 @@ export class ShareController {
           this.page({
             title: 'Artikel tidak ditemukan',
             description: '',
-            image: this.absolutize(str(map.og_default_image), origin),
+            image: noImage,
             siteName,
             url: target,
             type: 'website',
@@ -68,10 +70,10 @@ export class ShareController {
 
     const title = article.seoTitle || article.title;
     const description = article.seoDescription || article.excerpt || '';
-    const image = this.absolutize(
-      article.featuredMedia?.url || str(map.og_default_image),
-      origin,
-    );
+    // og:image = gambar utama artikel; bila tak ada → no-image bawaan.
+    const image = article.featuredMedia?.url
+      ? this.absolutize(article.featuredMedia.url, origin)
+      : noImage;
 
     res
       .type('html')
