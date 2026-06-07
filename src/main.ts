@@ -2,7 +2,7 @@
  * src/main.ts
  * Bootstrap aplikasi: security headers, CORS, global pipe/filter/interceptor, prefix versioned.
  */
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { createServer } from 'net';
@@ -99,7 +99,13 @@ async function bootstrap(): Promise<void> {
 
   const prefix = config.get<string>('apiPrefix');
   const version = config.get<string>('apiVersion');
-  app.setGlobalPrefix(`${prefix}/${version}`);
+  // Kecualikan halaman share crawler agar URL bersih: /share/... (bukan /api/v1/share).
+  app.setGlobalPrefix(`${prefix}/${version}`, {
+    exclude: [
+      { path: 'share', method: RequestMethod.GET },
+      { path: 'share/berita/:slug', method: RequestMethod.GET },
+    ],
+  });
 
   // Dokumentasi OpenAPI (kontrak API) di /api/docs; JSON di /api/docs-json.
   const swaggerConfig = new DocumentBuilder()

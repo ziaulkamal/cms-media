@@ -187,6 +187,12 @@ export class ArticlesService {
     return paginate(rows.map(toArticleView), total, query.page, query.perPage);
   }
 
+  /** Ambil artikel publik via slug TANPA menaikkan view (mis. untuk crawler share). */
+  async peekPublishedBySlug(slug: string): Promise<ArticleView | null> {
+    const article = await this.repo.findPublishedBySlug(slug);
+    return article ? toArticleView(article) : null;
+  }
+
   /** Ambil satu artikel publik via slug + naikkan view. */
   async getPublicBySlug(slug: string): Promise<ArticleView> {
     const article = await this.repo.findPublishedBySlug(slug);

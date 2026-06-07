@@ -31,6 +31,7 @@ import { LiveStreamsModule } from './modules/live-streams/live-streams.module';
 import { VenueContentModule } from './modules/venue-content/venue-content.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { MenusModule } from './modules/menus/menus.module';
+import { ShareModule } from './modules/share/share.module';
 import { DevModule } from './modules/dev/dev.module';
 
 @Module({
@@ -67,6 +68,7 @@ import { DevModule } from './modules/dev/dev.module';
     VenueContentModule,
     RealtimeModule,
     MenusModule,
+    ShareModule,
     DevModule,
   ],
   providers: [
