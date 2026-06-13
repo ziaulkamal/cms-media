@@ -20,13 +20,16 @@ import { ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { BulkIdsDto } from '../../common/dto/bulk-ids.dto';
+import { AuthenticatedUser } from '../../common/types/authenticated-user';
 import { CommentsService } from './comments.service';
 import { CommentQueryDto } from './dto/comment-query.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { ModerationQueryDto } from './dto/moderation-query.dto';
+import { ReplyCommentDto } from './dto/reply-comment.dto';
 
 /** Cookie penanda komentar yang sudah disukai perangkat ini (dedup suka). */
 const LIKED_COOKIE = 'liked_comments';
@@ -94,8 +97,13 @@ export class CommentsController {
     return this.comments.listApproved(query.articleId, query.page, query.perPage);
   }
 
-  /** Daftar komentar untuk moderasi (editor ke atas). */
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  /** Daftar komentar untuk moderasi/balas (semua staf terautentikasi). */
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+    UserRole.AUTHOR,
+    UserRole.CONTRIBUTOR,
+  )
   @Get('moderation')
   moderationList(@Query() query: ModerationQueryDto) {
     return this.comments.listForModeration({
@@ -106,8 +114,13 @@ export class CommentsController {
     });
   }
 
-  /** Rekap jumlah komentar per status (editor ke atas). */
-  @Roles(UserRole.EDITOR, UserRole.ADMIN)
+  /** Rekap jumlah komentar per status (semua staf terautentikasi). */
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+    UserRole.AUTHOR,
+    UserRole.CONTRIBUTOR,
+  )
   @Get('moderation/stats')
   moderationStats() {
     return this.comments.moderationStats();
@@ -125,6 +138,22 @@ export class CommentsController {
   @Patch(':id/spam')
   spam(@Param('id', ParseUUIDPipe) id: string) {
     return this.comments.markSpam(id);
+  }
+
+  /** Balas komentar sebagai staf (semua role; langsung tampil, ditandai panitia). */
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+    UserRole.AUTHOR,
+    UserRole.CONTRIBUTOR,
+  )
+  @Post(':id/reply')
+  reply(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ReplyCommentDto,
+  ) {
+    return this.comments.replyAsAdmin(id, user.id, dto.body);
   }
 
   /** Hapus banyak komentar sekaligus (+ balasannya). */

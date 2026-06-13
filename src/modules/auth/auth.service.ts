@@ -56,6 +56,16 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
+  /** Ganti password mandiri: delegasi ke UsersService + catat audit. */
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    await this.users.changeOwnPassword(userId, currentPassword, newPassword);
+    this.audit.log(`password.changed userId=${userId}`);
+  }
+
   /** Tandatangani access + refresh token dengan secret & TTL masing-masing. */
   private async issueTokens(user: AuthenticatedUser): Promise<TokenPair> {
     const payload: JwtPayload = {

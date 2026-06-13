@@ -17,6 +17,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { SetPasswordDto } from './dto/set-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 
@@ -49,5 +50,20 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ) {
     return this.users.update(id, dto);
+  }
+
+  /** Tetapkan password spesifik untuk user terpilih. */
+  @Patch(':id/password')
+  setPassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetPasswordDto,
+  ) {
+    return this.users.setPassword(id, dto.password);
+  }
+
+  /** Reset password user ke nilai acak; balikan plaintext sekali tampil. */
+  @Post(':id/password/reset')
+  resetPassword(@Param('id', ParseUUIDPipe) id: string) {
+    return this.users.resetPassword(id);
   }
 }

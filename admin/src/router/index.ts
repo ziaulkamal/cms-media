@@ -95,10 +95,10 @@ const router = createRouter({
           component: () => import('@/pages/media/Index.vue'),
         },
         {
+          // Semua role boleh masuk untuk membalas; moderasi tetap editor ke atas.
           path: 'comments',
           name: 'comments',
           component: () => import('@/pages/comments/Index.vue'),
-          meta: { roles: ['ADMIN', 'EDITOR'] },
         },
         {
           path: 'gallery',

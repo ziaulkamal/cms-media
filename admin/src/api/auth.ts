@@ -1,5 +1,10 @@
 /** admin/src/api/auth.ts — endpoint autentikasi berbasis cookie. */
-import type { LoginPayload, SuccessEnvelope, User } from '@/types/cms';
+import type {
+  ChangePasswordPayload,
+  LoginPayload,
+  SuccessEnvelope,
+  User,
+} from '@/types/cms';
 import { http, unwrap } from './http';
 
 export const authApi = {
@@ -12,4 +17,8 @@ export const authApi = {
 
   /** Logout: hapus cookie auth di server. */
   logout: () => http.post('/auth/logout'),
+
+  /** Ganti password mandiri (butuh password lama). */
+  changePassword: (payload: ChangePasswordPayload) =>
+    http.patch('/auth/password', payload),
 };

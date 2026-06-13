@@ -7,7 +7,11 @@ import {
 } from '@tanstack/vue-query';
 import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 import { usersApi } from '@/api/users';
-import type { CreateUserPayload, UpdateUserPayload } from '@/types/cms';
+import type {
+  CreateUserPayload,
+  SetPasswordPayload,
+  UpdateUserPayload,
+} from '@/types/cms';
 
 /** Daftar user ber-paginasi (page reaktif). */
 export function useUsersQuery(page: MaybeRefOrGetter<number>, perPage = 20) {
@@ -33,6 +37,13 @@ export function useUserMutations() {
       mutationFn: (vars: { id: string; payload: UpdateUserPayload }) =>
         usersApi.update(vars.id, vars.payload),
       onSuccess: invalidate,
+    }),
+    setPassword: useMutation({
+      mutationFn: (vars: { id: string; payload: SetPasswordPayload }) =>
+        usersApi.setPassword(vars.id, vars.payload),
+    }),
+    resetPassword: useMutation({
+      mutationFn: (id: string) => usersApi.resetPassword(id),
     }),
   };
 }

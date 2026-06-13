@@ -40,6 +40,11 @@ export function useCommentMutations() {
       mutationFn: (id: string) => commentsApi.spam(id),
       onSuccess: invalidate,
     }),
+    reply: useMutation({
+      mutationFn: (vars: { id: string; body: string }) =>
+        commentsApi.reply(vars.id, vars.body),
+      onSuccess: invalidate,
+    }),
     remove: useMutation({
       mutationFn: (id: string) => commentsApi.remove(id),
       onSuccess: invalidate,

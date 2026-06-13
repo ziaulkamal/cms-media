@@ -5,9 +5,14 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 import * as argon2 from 'argon2';
-import { ConflictError, NotFoundError } from '../../common/errors/domain-error';
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from '../../common/errors/domain-error';
 import { Paginated } from '../../common/interceptors/response.interceptor';
 import { paginate } from '../../common/dto/paginated';
+import { generatePassword } from '../../common/utils/password';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { toUserView, UserView } from './entities/user.entity';
@@ -52,6 +57,39 @@ export class UsersService {
     await this.getEntityOrFail(id);
     const user = await this.repo.update(id, dto);
     return toUserView(user);
+  }
+
+  /** Ganti password mandiri: verifikasi password lama dulu, lalu set yang baru. */
+  async changeOwnPassword(
+    id: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.getEntityOrFail(id);
+    const ok = await argon2.verify(user.passwordHash, currentPassword);
+    if (!ok) throw new ValidationError('Password saat ini salah.');
+    await this.repo.update(id, { passwordHash: await argon2.hash(newPassword) });
+  }
+
+  /** Admin menetapkan password spesifik untuk user terpilih. */
+  async setPassword(id: string, newPassword: string): Promise<UserView> {
+    await this.getEntityOrFail(id);
+    const user = await this.repo.update(id, {
+      passwordHash: await argon2.hash(newPassword),
+    });
+    return toUserView(user);
+  }
+
+  /** Admin reset password ke nilai acak; kembalikan plaintext sekali pakai. */
+  async resetPassword(
+    id: string,
+  ): Promise<{ user: UserView; password: string }> {
+    await this.getEntityOrFail(id);
+    const password = generatePassword();
+    const user = await this.repo.update(id, {
+      passwordHash: await argon2.hash(password),
+    });
+    return { user: toUserView(user), password };
   }
 
   /** Verifikasi kredensial untuk login; kembalikan user bila cocok. */

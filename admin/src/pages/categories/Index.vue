@@ -21,6 +21,7 @@ import {
 import { useConfirm } from '@/composables/useConfirm';
 import { useSelection } from '@/composables/useSelection';
 import { useToast } from '@/composables/useToast';
+import { slugify } from '@/lib/permalink';
 import type { Category, ReorderCategoryItem } from '@/types/cms';
 
 const toast = useToast();
@@ -127,8 +128,16 @@ async function onBulkDelete(): Promise<void> {
 // --- Modal CRUD ---
 const open = ref(false);
 const editingId = ref<string | null>(null);
-const form = reactive<{ name: string; parentId: string }>({ name: '', parentId: '' });
+const editingDefault = ref(false);
+const form = reactive<{ name: string; slug: string; parentId: string }>({
+  name: '',
+  slug: '',
+  parentId: '',
+});
 const fieldError = ref('');
+
+/** Pratinjau slug final: pakai slug kustom bila diisi, jika tidak turun dari nama. */
+const slugPreview = computed(() => slugify(form.slug || form.name) || '—');
 
 /** Opsi induk (kecuali diri sendiri saat edit). */
 const parentOptions = computed(() =>
@@ -139,7 +148,9 @@ const parentOptions = computed(() =>
 
 function openCreate(): void {
   editingId.value = null;
+  editingDefault.value = false;
   form.name = '';
+  form.slug = '';
   form.parentId = '';
   fieldError.value = '';
   open.value = true;
@@ -147,7 +158,9 @@ function openCreate(): void {
 
 function openEdit(category: Category): void {
   editingId.value = category.id;
+  editingDefault.value = category.isDefault;
   form.name = category.name;
+  form.slug = category.slug;
   form.parentId = category.parentId ?? '';
   fieldError.value = '';
   open.value = true;
@@ -179,14 +192,20 @@ async function onSubmit(): Promise<void> {
     return;
   }
   fieldError.value = '';
+  // Slug kustom opsional; kosong = backend turunkan dari nama. Default terkunci.
+  const slug = form.slug.trim() ? slugify(form.slug) : undefined;
   try {
     if (editingId.value) {
-      // Edit: ubah nama saja; jenjang diatur lewat drag-and-drop.
-      await update.mutateAsync({ id: editingId.value, payload: { name: form.name } });
+      // Edit: ubah nama & slug (kecuali default); jenjang diatur via drag-and-drop.
+      await update.mutateAsync({
+        id: editingId.value,
+        payload: { name: form.name, ...(editingDefault.value ? {} : { slug }) },
+      });
       toast.success('Kategori diperbarui.');
     } else {
       await create.mutateAsync({
         name: form.name,
+        slug,
         parentId: form.parentId || undefined,
       });
       toast.success('Kategori dibuat.');
@@ -279,6 +298,22 @@ async function onSubmit(): Promise<void> {
     <Modal v-model:open="open" :title="editingId ? 'Edit Kategori' : 'Kategori Baru'">
       <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
         <TextInput v-model="form.name" label="Nama" required :error="fieldError" />
+
+        <div>
+          <TextInput
+            v-model="form.slug"
+            label="Slug"
+            :disabled="editingDefault"
+            :placeholder="editingId ? '' : 'Kosongkan untuk otomatis dari nama'"
+          />
+          <p v-if="editingDefault" class="text-text-subtle mt-1 text-xs">
+            Slug kategori default terkunci dan tidak dapat diubah.
+          </p>
+          <p v-else class="text-text-subtle mt-1 text-xs">
+            URL final: <code class="text-text-muted">/{{ slugPreview }}</code>
+          </p>
+        </div>
+
         <SelectInput
           v-if="!editingId"
           v-model="form.parentId"

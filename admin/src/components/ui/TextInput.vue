@@ -10,6 +10,7 @@ withDefaults(
     placeholder?: string;
     error?: string;
     required?: boolean;
+    disabled?: boolean;
     autocomplete?: string;
   }>(),
   { type: 'text' },
@@ -32,9 +33,10 @@ const id = useId();
       :value="modelValue"
       :placeholder="placeholder"
       :required="required"
+      :disabled="disabled"
       :autocomplete="autocomplete"
       :aria-invalid="!!error"
-      class="border-border bg-surface text-text-primary placeholder:text-text-subtle h-10 rounded-md border px-3 text-sm outline-none focus:border-primary"
+      class="border-border bg-surface text-text-primary placeholder:text-text-subtle h-10 rounded-md border px-3 text-sm outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
       :class="error ? 'border-danger' : ''"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />

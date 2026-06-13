@@ -353,6 +353,8 @@ export interface PublishArticlePayload {
 
 export interface CreateCategoryPayload {
   name: string;
+  /** Slug kustom; kosong = diturunkan dari nama. */
+  slug?: string;
   parentId?: string;
 }
 export type UpdateCategoryPayload = Partial<CreateCategoryPayload>;
@@ -470,6 +472,23 @@ export interface UpdateUserPayload {
   name?: string;
   role?: UserRole;
   isActive?: boolean;
+}
+
+/** Admin menetapkan password spesifik untuk user. */
+export interface SetPasswordPayload {
+  password: string;
+}
+
+/** Ganti password mandiri (butuh password lama). */
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/** Hasil reset password oleh admin (plaintext sekali tampil). */
+export interface ResetPasswordResult {
+  user: User;
+  password: string;
 }
 
 export interface UpsertSettingPayload {
@@ -654,6 +673,82 @@ export interface DummyCounts {
   liveStreams: number;
   venue: number;
   contact: number;
+}
+
+// ============================================================
+// Dashboard (ringkasan agregasi)
+// ============================================================
+
+/** Hitungan KPI utama dashboard. */
+export interface DashboardCounts {
+  articles: number;
+  published: number;
+  draft: number;
+  pages: number;
+  media: number;
+  users: number;
+  galleryPhotos: number;
+  pendingComments: number;
+  newContacts: number;
+  liveActive: number;
+}
+
+/** Satu irisan komposisi konten (untuk donut). */
+export interface DashboardCompositionItem {
+  key: string;
+  label: string;
+  value: number;
+}
+
+/** Deret tren publikasi harian. */
+export interface DashboardTrend {
+  labels: string[];
+  values: number[];
+}
+
+/** Komentar menunggu pada antrean "butuh aksi". */
+export interface DashboardCommentFeed {
+  id: string;
+  authorName: string | null;
+  body: string;
+  createdAt: string;
+  article: { id: string; title: string; slug: string } | null;
+}
+
+/** Pesan kontak baru pada antrean "butuh aksi". */
+export interface DashboardContactFeed {
+  id: string;
+  name: string;
+  subject: string;
+  createdAt: string;
+}
+
+/** Kanal live yang sedang aktif. */
+export interface DashboardLiveFeed {
+  id: string;
+  title: string;
+  sportName: string | null;
+  viewerCount: number;
+}
+
+/** Artikel terpopuler (leaderboard by views). */
+export interface DashboardTopArticle {
+  id: string;
+  title: string;
+  viewCount: number;
+}
+
+/** Ringkasan lengkap dashboard dari GET /dashboard/stats. */
+export interface DashboardStats {
+  counts: DashboardCounts;
+  composition: DashboardCompositionItem[];
+  trend: DashboardTrend;
+  feed: {
+    comments: DashboardCommentFeed[];
+    contacts: DashboardContactFeed[];
+    liveStreams: DashboardLiveFeed[];
+  };
+  topArticles: DashboardTopArticle[];
 }
 
 /** Pilihan generate data dummy (per-jenis). */

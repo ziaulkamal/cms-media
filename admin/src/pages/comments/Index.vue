@@ -6,6 +6,7 @@ import {
   Clock3,
   CornerDownRight,
   MessagesSquare,
+  Reply,
   ShieldAlert,
   Trash2,
 } from 'lucide-vue-next';
@@ -13,10 +14,12 @@ import { ApiError } from '@/api/http';
 import Badge from '@/components/ui/Badge.vue';
 import BulkActionBar from '@/components/ui/BulkActionBar.vue';
 import Button from '@/components/ui/Button.vue';
+import Modal from '@/components/ui/Modal.vue';
 import Pagination from '@/components/ui/Pagination.vue';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import QueryState from '@/components/ui/QueryState.vue';
 import SelectInput from '@/components/ui/SelectInput.vue';
+import Textarea from '@/components/ui/Textarea.vue';
 import {
   useCommentMutations,
   useCommentsQuery,
@@ -29,6 +32,7 @@ import { useSelection } from '@/composables/useSelection';
 import { useToast } from '@/composables/useToast';
 import { commentStatusLabel, commentStatusVariant, toOptions } from '@/lib/labels';
 import { formatDate } from '@/lib/format';
+import { useAuthStore } from '@/stores/auth';
 import type {
   CommentModeration,
   CommentModerationStats,
@@ -37,6 +41,9 @@ import type {
 
 const toast = useToast();
 const { confirm } = useConfirm();
+const auth = useAuthStore();
+/** Approve/spam/hapus hanya untuk editor ke atas; balas terbuka semua role. */
+const canModerate = computed(() => auth.hasRole('ADMIN', 'EDITOR'));
 const status = useQueryParam('status');
 const { page, perPage } = usePagination(20);
 
@@ -48,7 +55,7 @@ const params = computed<ModerationQuery>(() => ({
 
 const { data, isLoading, error } = useCommentsQuery(params);
 const { data: stats } = useCommentStatsQuery();
-const { approve, spam, remove, bulkRemove } = useCommentMutations();
+const { approve, spam, remove, bulkRemove, reply } = useCommentMutations();
 const statusOptions = toOptions(commentStatusLabel);
 
 const busy = computed(
@@ -117,6 +124,37 @@ async function run(action: Promise<unknown>, ok: string): Promise<void> {
   }
 }
 
+// --- Balas komentar sebagai panitia ---
+const replyOpen = ref(false);
+const replyTarget = ref<CommentModeration | null>(null);
+const replyBody = ref('');
+const replyError = ref('');
+
+/** Buka modal balas untuk komentar terpilih. */
+function openReply(c: CommentModeration): void {
+  replyTarget.value = c;
+  replyBody.value = '';
+  replyError.value = '';
+  replyOpen.value = true;
+}
+
+/** Kirim balasan; balasan langsung tampil & ditandai panitia. */
+async function onReply(): Promise<void> {
+  if (!replyTarget.value) return;
+  replyError.value = '';
+  if (replyBody.value.trim().length < 2) {
+    replyError.value = 'Balasan minimal 2 karakter.';
+    return;
+  }
+  try {
+    await reply.mutateAsync({ id: replyTarget.value.id, body: replyBody.value.trim() });
+    replyOpen.value = false;
+    toast.success('Balasan terkirim.');
+  } catch (e) {
+    replyError.value = e instanceof ApiError ? e.message : 'Gagal mengirim balasan.';
+  }
+}
+
 /** Hapus komentar dengan konfirmasi (balasan ikut terhapus). */
 async function onDelete(c: CommentModeration): Promise<void> {
   const ok = await confirm({
@@ -160,13 +198,19 @@ async function onDelete(c: CommentModeration): Promise<void> {
       :is-empty="!data || data.items.length === 0"
       empty-text="Tidak ada komentar untuk dimoderasi."
     >
-      <BulkActionBar :count="sel.count.value" :busy="busy" @delete="onBulkDelete" @clear="sel.clear" />
+      <BulkActionBar
+        v-if="canModerate"
+        :count="sel.count.value"
+        :busy="busy"
+        @delete="onBulkDelete"
+        @clear="sel.clear"
+      />
 
       <div class="border-border bg-surface overflow-x-auto rounded-xl border">
         <table class="w-full min-w-[960px] text-left text-sm">
           <thead class="border-border text-text-muted border-b text-xs uppercase">
             <tr>
-              <th class="w-10 px-4 py-3">
+              <th v-if="canModerate" class="w-10 px-4 py-3">
                 <input
                   type="checkbox"
                   class="accent-primary size-4 rounded"
@@ -190,7 +234,7 @@ async function onDelete(c: CommentModeration): Promise<void> {
               class="border-border/60 border-b last:border-0 align-top"
               :class="sel.has(c.id) ? 'bg-primary-light/40' : ''"
             >
-              <td class="px-4 py-3">
+              <td v-if="canModerate" class="px-4 py-3">
                 <input
                   type="checkbox"
                   class="accent-primary size-4 rounded"
@@ -233,7 +277,15 @@ async function onDelete(c: CommentModeration): Promise<void> {
               <td class="px-4 py-3">
                 <div class="flex items-center justify-end gap-1.5">
                   <Button
-                    v-if="c.status !== 'APPROVED'"
+                    v-if="c.status !== 'SPAM'"
+                    size="sm"
+                    variant="secondary"
+                    @click="openReply(c)"
+                  >
+                    <Reply class="h-4 w-4" /> Balas
+                  </Button>
+                  <Button
+                    v-if="canModerate && c.status !== 'APPROVED'"
                     size="sm"
                     variant="secondary"
                     :loading="busy"
@@ -242,7 +294,7 @@ async function onDelete(c: CommentModeration): Promise<void> {
                     Approve
                   </Button>
                   <Button
-                    v-if="c.status !== 'SPAM'"
+                    v-if="canModerate && c.status !== 'SPAM'"
                     size="sm"
                     variant="ghost"
                     :loading="busy"
@@ -250,7 +302,13 @@ async function onDelete(c: CommentModeration): Promise<void> {
                   >
                     Spam
                   </Button>
-                  <Button size="sm" variant="ghost" :loading="busy" @click="onDelete(c)">
+                  <Button
+                    v-if="canModerate"
+                    size="sm"
+                    variant="ghost"
+                    :loading="busy"
+                    @click="onDelete(c)"
+                  >
                     <Trash2 class="h-4 w-4" />
                   </Button>
                 </div>
@@ -270,5 +328,34 @@ async function onDelete(c: CommentModeration): Promise<void> {
         />
       </div>
     </QueryState>
+
+    <!-- Balas komentar (panitia) -->
+    <Modal v-model:open="replyOpen" title="Balas Komentar" size="md">
+      <div v-if="replyTarget" class="flex flex-col gap-4">
+        <div class="border-border bg-bg-subtle/50 rounded-lg border p-3 text-sm">
+          <p class="text-text-muted mb-1 text-xs">
+            Membalas {{ replyTarget.authorName || 'Anonim' }}:
+          </p>
+          <p class="text-text-primary whitespace-pre-line break-words line-clamp-4">
+            {{ replyTarget.body }}
+          </p>
+        </div>
+        <Textarea
+          v-model="replyBody"
+          label="Balasan Anda"
+          placeholder="Tulis balasan resmi panitia…"
+          :rows="4"
+          :error="replyError"
+        />
+        <p class="text-text-subtle text-xs">
+          Balasan langsung tampil ke publik dan ditandai sebagai panitia. Bila komentar
+          masih menunggu, balasan akan otomatis menyetujuinya.
+        </p>
+      </div>
+      <template #footer>
+        <Button variant="secondary" @click="replyOpen = false">Batal</Button>
+        <Button :loading="reply.isPending.value" @click="onReply">Kirim Balasan</Button>
+      </template>
+    </Modal>
   </div>
 </template>

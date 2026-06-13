@@ -63,7 +63,7 @@ export const navGroups: NavGroup[] = [
   {
     label: 'Moderasi',
     items: [
-      { label: 'Komentar', to: '/comments', icon: MessageSquare, roles: EDITOR_UP },
+      { label: 'Komentar', to: '/comments', icon: MessageSquare },
       { label: 'Kontak', to: '/contact', icon: Mail, roles: EDITOR_UP },
     ],
   },

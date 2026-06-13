@@ -11,6 +11,12 @@ export class CreateCategoryDto {
   @MaxLength(100)
   name!: string;
 
+  /** Slug kustom (opsional); bila kosong diturunkan dari nama. Dinormalkan di service. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  slug?: string;
+
   /** Kategori induk (untuk hierarki rubrik), opsional. */
   @IsOptional()
   @IsUUID()

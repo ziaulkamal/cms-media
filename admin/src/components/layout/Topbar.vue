@@ -1,9 +1,10 @@
 <!-- admin/src/components/layout/Topbar.vue — bar atas gaya Admin_FE: toggle, search ⌘K, tema, avatar dropdown. -->
 <script setup lang="ts">
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
-import { ChevronDown, LogOut, Moon, PanelLeft, Search, Sun } from 'lucide-vue-next';
+import { ChevronDown, KeyRound, LogOut, Moon, PanelLeft, Search, Sun } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import ChangePasswordModal from '@/components/auth/ChangePasswordModal.vue';
 import { useTheme } from '@/composables/useTheme';
 import { useToast } from '@/composables/useToast';
 import { useAuthStore } from '@/stores/auth';
@@ -15,6 +16,7 @@ const auth = useAuthStore();
 const router = useRouter();
 const toast = useToast();
 const { isDark, toggleTheme } = useTheme();
+const passwordModalOpen = ref(false);
 
 const initial = computed(() => auth.user?.name?.charAt(0).toUpperCase() ?? '?');
 
@@ -126,6 +128,17 @@ async function onLogout(): Promise<void> {
             <MenuItem v-slot="{ active }">
               <button
                 type="button"
+                class="text-text-primary flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
+                :class="active ? 'bg-bg-subtle' : ''"
+                @click="passwordModalOpen = true"
+              >
+                <KeyRound class="h-4 w-4" />
+                Ubah Password
+              </button>
+            </MenuItem>
+            <MenuItem v-slot="{ active }">
+              <button
+                type="button"
                 class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px]"
                 :class="active ? 'bg-danger-light text-danger' : 'text-danger'"
                 @click="onLogout"
@@ -138,6 +151,8 @@ async function onLogout(): Promise<void> {
         </MenuItems>
       </Menu>
     </div>
+
+    <ChangePasswordModal v-model:open="passwordModalOpen" />
   </header>
 </template>
 

@@ -11,6 +11,7 @@ import {
 } from '../../common/errors/domain-error';
 import { Paginated } from '../../common/interceptors/response.interceptor';
 import { sanitizeText } from '../../common/utils/sanitize';
+import { UsersService } from '../users/users.service';
 import { CommentsRepository } from './comments.repository';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreatePublicCommentDto } from './dto/create-public-comment.dto';
@@ -29,7 +30,10 @@ import {
 export class CommentsService {
   private readonly audit = new Logger('Audit');
 
-  constructor(private readonly repo: CommentsRepository) {}
+  constructor(
+    private readonly repo: CommentsRepository,
+    private readonly users: UsersService,
+  ) {}
 
   /** Buat komentar berstatus PENDING pada artikel yang sudah terbit. */
   async create(dto: CreateCommentDto): Promise<CommentModerationView> {
@@ -131,6 +135,40 @@ export class CommentsService {
     const approved = count(CommentStatus.APPROVED);
     const spam = count(CommentStatus.SPAM);
     return { total: pending + approved + spam, pending, approved, spam };
+  }
+
+  /**
+   * Balas komentar sebagai staf (editor/admin) dari panel moderasi.
+   * Balasan langsung APPROVED & tertaut ke akun staf (badge panitia di publik);
+   * komentar induk yang masih PENDING ikut disetujui agar thread tampil utuh.
+   */
+  async replyAsAdmin(
+    parentId: string,
+    authorUserId: string,
+    body: string,
+  ): Promise<CommentModerationView> {
+    const parent = await this.getOrFail(parentId);
+    if (parent.status === CommentStatus.SPAM) {
+      throw new ValidationError(
+        'Tidak bisa membalas komentar yang ditandai spam.',
+      );
+    }
+    const author = await this.users.getById(authorUserId);
+    if (parent.status === CommentStatus.PENDING) {
+      await this.repo.updateStatus(parentId, CommentStatus.APPROVED);
+    }
+    const reply = await this.repo.create({
+      article: { connect: { id: parent.articleId } },
+      parent: { connect: { id: parent.id } },
+      user: { connect: { id: authorUserId } },
+      authorName: author.name,
+      body: sanitizeText(body),
+      status: CommentStatus.APPROVED,
+    });
+    this.audit.log(
+      `comment.reply id=${reply.id} parent=${parentId} by=${authorUserId}`,
+    );
+    return toCommentModerationView(reply);
   }
 
   /** Setujui komentar (tampil ke publik). */

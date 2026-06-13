@@ -36,6 +36,14 @@ export const commentsApi = {
       http.patch<SuccessEnvelope<CommentModeration>>(`/comments/${id}/spam`),
     ),
 
+  /** Balas komentar sebagai staf (langsung tampil, ditandai panitia). */
+  reply: (id: string, body: string) =>
+    unwrap<CommentModeration>(
+      http.post<SuccessEnvelope<CommentModeration>>(`/comments/${id}/reply`, {
+        body,
+      }),
+    ),
+
   remove: (id: string) => http.delete(`/comments/${id}`),
 
   bulkRemove: (ids: string[]) =>

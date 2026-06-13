@@ -32,6 +32,7 @@ import { VenueContentModule } from './modules/venue-content/venue-content.module
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { MenusModule } from './modules/menus/menus.module';
 import { ShareModule } from './modules/share/share.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DevModule } from './modules/dev/dev.module';
 
 @Module({
@@ -69,6 +70,7 @@ import { DevModule } from './modules/dev/dev.module';
     RealtimeModule,
     MenusModule,
     ShareModule,
+    DashboardModule,
     DevModule,
   ],
   providers: [

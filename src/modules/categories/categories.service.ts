@@ -39,11 +39,14 @@ export class CategoriesService implements OnModuleInit {
     );
   }
 
-  /** Buat kategori; slug unik dari nama, induk valid, posisi di akhir saudara. */
+  /** Buat kategori; slug kustom/diturunkan & unik, induk valid, posisi di akhir saudara. */
   async create(dto: CreateCategoryDto): Promise<CategoryView> {
-    const slug = slugify(dto.name);
+    const slug = slugify(dto.slug ?? dto.name);
+    if (!slug) {
+      throw new ValidationError('Slug tidak valid (gunakan huruf/angka).');
+    }
     if (await this.repo.slugExists(slug)) {
-      throw new ConflictError('Kategori dengan nama serupa sudah ada.');
+      throw new ConflictError('Slug kategori sudah dipakai.');
     }
     await this.assertParentExists(dto.parentId);
     const parentId = dto.parentId ?? null;
@@ -57,7 +60,7 @@ export class CategoriesService implements OnModuleInit {
     return toCategoryView(created);
   }
 
-  /** Ubah kategori (nama dan/atau induk); jaga proteksi default & anti-siklus. */
+  /** Ubah kategori (nama, slug, dan/atau induk); jaga proteksi default & anti-siklus. */
   async update(id: string, dto: UpdateCategoryDto): Promise<CategoryView> {
     const current = await this.getOrFail(id);
 
@@ -75,8 +78,27 @@ export class CategoriesService implements OnModuleInit {
       await this.assertNoCycle(id, nextParentId);
     }
 
+    // Slug kustom hanya diproses bila dikirim; slug kategori default dikunci.
+    let nextSlug: string | undefined;
+    if (dto.slug !== undefined) {
+      if (current.isDefault) {
+        throw new ValidationError(
+          'Slug kategori default tidak dapat diubah.',
+        );
+      }
+      const normalized = slugify(dto.slug);
+      if (!normalized) {
+        throw new ValidationError('Slug tidak valid (gunakan huruf/angka).');
+      }
+      if (normalized !== current.slug && (await this.repo.slugExists(normalized))) {
+        throw new ConflictError('Slug kategori sudah dipakai.');
+      }
+      nextSlug = normalized;
+    }
+
     const updated = await this.repo.update(id, {
       name: dto.name,
+      ...(nextSlug !== undefined && { slug: nextSlug }),
       ...(reparenting && {
         parent: nextParentId
           ? { connect: { id: nextParentId } }
