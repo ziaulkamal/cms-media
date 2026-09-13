@@ -3,6 +3,12 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Alpine (musl) + OpenSSL 3.x. Tanpa ini Prisma 5.x salah menebak dan
+  // memilih engine openssl-1.1.x, lalu gagal memuatnya:
+  //   "Prisma failed to detect the libssl/openssl version"
+  //   "Could not parse schema engine response: ... Error load..."
+  // `native` dipertahankan agar `npm run start:dev` di host tetap jalan.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
