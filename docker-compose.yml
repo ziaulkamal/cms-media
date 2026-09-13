@@ -1,30 +1,115 @@
-# docker-compose.yml — layanan dev lokal (PostgreSQL; Redis disiapkan utk fase berikutnya).
+# =============================================================================
+# CMS — cms-media (NestJS / Prisma) — stack Docker MANDIRI
+# Berisi PostgreSQL + migrasi (one-shot) + app. Redis disiapkan (di-comment)
+# untuk throttle/refresh-token saat dibutuhkan.
+#
+# Jalankan:  docker compose up -d --build
+# JWT secret & DATABASE_URL diambil dari .env (override via shell bila perlu).
+# =============================================================================
+
+x-logging: &log
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: cms_media_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: cms_media
+      POSTGRES_USER: ${CMS_DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${CMS_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${CMS_DB_DATABASE:-cms_media}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - work_mem=8MB
+      - -c
+      - max_connections=100
     ports:
-      - "5432:5432"
+      - "${CMS_DB_PORT:-5432}:5432"   # ekspos utk Prisma Studio / debugging dari host
     volumes:
       - cms_media_pgdata:/var/lib/postgresql/data
+    networks: [ cms-net ]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d cms_media"]
+      test: ["CMD-SHELL", "pg_isready -U ${CMS_DB_USERNAME:-postgres} -d ${CMS_DB_DATABASE:-cms_media}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+    logging: *log
+    deploy:
+      resources:
+        limits: { cpus: "1.00", memory: 640M }
+        reservations: { memory: 256M }
 
-  # Disiapkan untuk cache/rate-limit/refresh-token (aktifkan saat dibutuhkan).
+  migrate:
+    build: { context: ., target: build }
+    image: cms-media-build:latest
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: ${CMS_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/cms_media?schema=public}
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [ cms-net ]
+    restart: "no"
+    logging: *log
+
+  cms:
+    build: { context: ., target: runtime }
+    image: cms-media:latest
+    container_name: cms_media_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      DATABASE_URL: ${CMS_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/cms_media?schema=public}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-ganti_access_secret_min_16char}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-ganti_refresh_secret_min_16char}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-900s}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_DIR: storage/uploads
+      STORAGE_PUBLIC_BASE_URL: ${CMS_STORAGE_PUBLIC_BASE_URL:-http://localhost:3001}
+      THROTTLE_TTL: "60"
+      THROTTLE_LIMIT: "100"
+      # REDIS_HOST: redis
+      # REDIS_PORT: "6379"
+    volumes:
+      - cms_uploads:/app/storage/uploads
+    ports:
+      - "${CMS_HTTP_PORT:-3001}:3001"
+    depends_on:
+      postgres: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    networks: [ cms-net ]
+    logging: *log
+    deploy:
+      resources:
+        limits: { cpus: "1.00", memory: 512M }
+        reservations: { memory: 128M }
+
+  # Aktifkan bila CMS mulai memakai Redis (cache/throttle/refresh-token):
   # redis:
   #   image: redis:7-alpine
-  #   container_name: cms_media_redis
   #   restart: unless-stopped
-  #   ports:
-  #     - "6379:6379"
+  #   command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy volatile-lru
+  #   volumes: [ cms_redis:/data ]
+  #   networks: [ cms-net ]
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 5
+
+networks:
+  cms-net:
+    driver: bridge
 
 volumes:
   cms_media_pgdata:
+  cms_uploads:
+  # cms_redis:

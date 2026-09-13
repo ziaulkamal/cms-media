@@ -1,0 +1,33 @@
+# Konteks build ramping
+.git
+.gitignore
+.github
+.vscode
+.claude
+.idea
+
+node_modules
+dist
+
+# Frontend admin SPA dibangun terpisah (lihat admin/) — tak perlu di image backend
+admin
+
+# Storage & log lokal (volume terpisah saat runtime)
+storage/uploads/*
+*.log
+
+# Rahasia & lingkungan lokal (di-inject lewat compose)
+.env
+.env.*
+!.env.example
+
+# Dokumentasi & artefak
+*.md
+docs
+test
+todos.txt
+postman_collection.json
+docker-compose.yml
+
+.DS_Store
+Thumbs.db

@@ -35,3 +35,7 @@ postman_environment.json
 # todos (lokal, jangan dipublish)
 todos.txt
 **/todos.txt
+
+# Penyesuaian lokal per-mesin (tidak dibagikan)
+docker-compose.override.yml
+.env.bak-*
