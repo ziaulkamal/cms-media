@@ -12,6 +12,8 @@ export interface AppConfig {
   apiPrefix: string;
   apiVersion: string;
   corsOrigins: string[];
+  /** Setelan `trust proxy` Express (lihat parseTrustProxy). */
+  trustProxy: boolean | number | string;
   /** Base URL API publik simpora2026 (server-to-server; venue & skor). */
   simporaApiUrl: string;
   jwt: {
@@ -34,6 +36,18 @@ export interface AppConfig {
   throttle: { ttl: number; limit: number };
 }
 
+/**
+ * "true"/"false" -> boolean, "1" -> jumlah hop, selain itu daftar IP/subnet
+ * (mis. "loopback, linklocal, uniquelocal") diteruskan apa adanya ke Express.
+ */
+function parseTrustProxy(raw: string): boolean | number | string {
+  const v = raw.trim();
+  if (v === 'true') return true;
+  if (v === 'false') return false;
+  if (/^\d+$/.test(v)) return Number(v);
+  return v;
+}
+
 /** Factory config yang dimuat ConfigModule saat boot. */
 export default (): AppConfig => ({
   env: process.env.NODE_ENV ?? 'development',
@@ -48,6 +62,9 @@ export default (): AppConfig => ({
     .split(',')
     .map((o) => o.trim().replace(/\/+$/, '')) // buang trailing slash (browser tak kirim)
     .filter(Boolean),
+  trustProxy: parseTrustProxy(
+    process.env.TRUST_PROXY ?? 'loopback, linklocal, uniquelocal',
+  ),
   simporaApiUrl: (
     process.env.SIMPORA_API_URL ?? 'http://simpora2026.test/api/v1'
   ).replace(/\/+$/, ''),

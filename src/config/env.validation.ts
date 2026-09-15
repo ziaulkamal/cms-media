@@ -17,6 +17,8 @@ export const envValidationSchema = Joi.object({
   CORS_ORIGINS: Joi.string().default(
     'http://localhost:3001,http://localhost:5173,http://localhost:5174',
   ),
+  // Nilai `trust proxy` Express: jumlah hop, true/false, atau daftar IP/subnet.
+  TRUST_PROXY: Joi.string().default('loopback, linklocal, uniquelocal'),
   SIMPORA_API_URL: Joi.string().uri().default('http://simpora2026.test/api/v1'),
   SIMPORA_POLL_MS: Joi.number().integer().min(1000).default(4000),
 

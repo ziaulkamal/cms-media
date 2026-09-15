@@ -58,6 +58,11 @@ async function bootstrap(): Promise<void> {
   });
   const config = app.get(ConfigService);
 
+  // Di balik reverse proxy (Caddy/nginx): req.ip & req.protocol membaca
+  // X-Forwarded-* HANYA dari hop tepercaya. Tanpa ini throttler menghitung
+  // semua pengunjung sebagai satu IP (IP proxy). Default: jaringan privat saja.
+  app.set('trust proxy', config.get<boolean | number | string>('trustProxy'));
+
   // crossOriginResourcePolicy dilonggarkan agar aset /uploads bisa dimuat lintas origin.
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 

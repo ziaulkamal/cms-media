@@ -111,11 +111,19 @@ export class ShareController {
     );
   }
 
-  /** Origin CMS dari request (hormati proxy via x-forwarded-*). */
+  /**
+   * Origin CMS dari request. x-forwarded-* hanya dihormati bila datang dari
+   * proxy tepercaya (setelan `trust proxy`) — mencegah klien memalsukan host
+   * yang lalu tertanam di meta og:image / JSON-LD.
+   */
   private cmsOrigin(req: Request): string {
-    const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
-    const host = (req.headers['x-forwarded-host'] as string) || req.get('host');
-    return `${proto}://${host}`;
+    const isTrusted = req.app.get('trust proxy fn') as (addr: string, i: number) => boolean;
+    const fromProxy = isTrusted(req.socket.remoteAddress ?? '', 0);
+    const fwdHost = fromProxy
+      ? (req.headers['x-forwarded-host'] as string | undefined)?.split(',')[0]?.trim()
+      : undefined;
+    // req.protocol sudah membaca X-Forwarded-Proto sesuai `trust proxy`.
+    return `${req.protocol}://${fwdHost || req.get('host')}`;
   }
 
   /** Jadikan URL absolut (media bisa berupa path relatif /uploads/...). */
