@@ -14,6 +14,7 @@ import {
 import { Paginated } from '../../common/interceptors/response.interceptor';
 import { AuthenticatedUser } from '../../common/types/authenticated-user';
 import { slugify } from '../../common/utils/slug';
+import { sniffImageMime } from '../../common/utils/image-sniff';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { MediaRepository } from './media.repository';
 import { MediaView, toMediaView } from './entities/media.entity';
@@ -52,10 +53,17 @@ export class MediaService {
     if (file.size > this.maxSizeBytes) {
       throw new ValidationError('Ukuran berkas melebihi batas.');
     }
+    // Content-Type klien bisa dipalsukan; tentukan tipe dari MAGIC BYTES isi
+    // berkas. Berkas HTML/PHP/skrip berlabel "image/png" ditolak di sini, dan
+    // `detected` menjadi sumber kebenaran mime + ekstensi (bukan nama file).
+    const detected = sniffImageMime(file.buffer);
+    if (!detected || !ALLOWED_MIME.includes(detected)) {
+      throw new ValidationError('Isi berkas bukan gambar yang valid (JPEG/PNG/WebP/GIF).');
+    }
 
     const key = await this.storage.save({
       buffer: file.buffer,
-      mimeType: file.mimetype,
+      mimeType: detected,
       originalName: file.originalname,
     });
 
@@ -65,7 +73,7 @@ export class MediaService {
 
     const media = await this.repo.create({
       storageKey: key,
-      mimeType: file.mimetype,
+      mimeType: detected,
       size: file.size,
       title,
       alt,

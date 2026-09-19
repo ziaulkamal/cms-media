@@ -6,7 +6,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
-import { extname, join } from 'path';
+import { join } from 'path';
 import { mediaPublicUrl } from '../../../common/utils/media-url';
 import { StorageFile, StoragePort } from './storage-port';
 
@@ -24,7 +24,9 @@ export class LocalStorageAdapter implements StoragePort {
     const now = new Date();
     const yyyy = String(now.getFullYear());
     const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const ext = extname(file.originalName).toLowerCase() || this.extFromMime(file.mimeType);
+    // Ekstensi HANYA dari mime tervalidasi (service memakai hasil sniff),
+    // tak pernah dari originalName — cegah nama seperti "poc.php" tersimpan.
+    const ext = this.extFromMime(file.mimeType);
     const key = `${yyyy}/${mm}/${randomUUID()}${ext}`;
 
     const fullPath = join(this.baseDir, key);
