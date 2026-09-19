@@ -20,14 +20,16 @@ export class UpsertVenueContentDto {
   @MaxLength(160)
   venueRef!: string;
 
+  /** Opsional — admin cukup memberi foto; data inti venue dari simpora2026. */
+  @IsOptional()
   @IsString()
-  @MinLength(2)
   @MaxLength(10000)
-  description!: string;
+  description?: string;
 
+  /** undefined = foto utama tak diubah; null = lepas foto; uuid = ganti foto. */
   @IsOptional()
   @IsUUID()
-  imageMediaId?: string;
+  imageMediaId?: string | null;
 
   /** Galeri tambahan (array id/url media); disimpan apa adanya sebagai JSON. */
   @IsOptional()

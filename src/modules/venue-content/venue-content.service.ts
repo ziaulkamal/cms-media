@@ -50,21 +50,27 @@ export class VenueContentService {
     const imageConnect = dto.imageMediaId
       ? { connect: { id: dto.imageMediaId } }
       : undefined;
+    // Update: undefined = biarkan foto utama (dulu selalu `disconnect` -> foto
+    // hilang tiap kali konten diedit tanpa unggah ulang); null = lepas foto.
+    const imageUpdate =
+      dto.imageMediaId === undefined
+        ? undefined
+        : dto.imageMediaId === null
+          ? { disconnect: true }
+          : { connect: { id: dto.imageMediaId } };
 
     const result = await this.repo.upsert(
       dto.venueRef,
       {
         venueRef: dto.venueRef,
-        description: dto.description,
+        description: dto.description ?? '',
         imageMedia: imageConnect,
         gallery,
         galleryVisible: dto.galleryVisible ?? true,
       },
       {
         description: dto.description,
-        imageMedia: dto.imageMediaId
-          ? { connect: { id: dto.imageMediaId } }
-          : { disconnect: true },
+        imageMedia: imageUpdate,
         gallery,
         ...(dto.galleryVisible === undefined
           ? {}

@@ -11,12 +11,13 @@ export function useVenueContentQuery() {
   });
 }
 
-/** Daftar venue dari simpora2026 (dropdown; read-only). */
+/** Daftar venue dari simpora2026 (sumber daftar halaman Venue; read-only). */
 export function useVenueSourcesQuery() {
   return useQuery({
     queryKey: ['venue-sources'],
     queryFn: () => venueContentApi.sources(),
-    staleTime: 5 * 60 * 1000,
+    // Venue baru di panel harus cepat muncul di admin.
+    staleTime: 30 * 1000,
   });
 }
 

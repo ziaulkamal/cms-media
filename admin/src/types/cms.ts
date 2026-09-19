@@ -651,8 +651,9 @@ export interface VenueContent {
 
 export interface UpsertVenueContentPayload {
   venueRef: string;
-  description: string;
-  imageMediaId?: string;
+  description?: string;
+  /** undefined = foto utama tak diubah; null = lepas foto; id = ganti foto. */
+  imageMediaId?: string | null;
   gallery?: unknown[];
   galleryVisible?: boolean;
 }
