@@ -52,6 +52,20 @@ export class ArticlesRepository {
     });
   }
 
+  /** Pemilik tiap artikel (cek izin sebelum hapus massal). */
+  findOwners(ids: string[]): Promise<{ id: string; authorId: string }[]> {
+    return this.prisma.article.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, authorId: true },
+    });
+  }
+
+  /** Hapus permanen; tag, revisi & komentar ikut terhapus (onDelete: Cascade). */
+  async deleteMany(ids: string[]): Promise<number> {
+    const { count } = await this.prisma.article.deleteMany({ where: { id: { in: ids } } });
+    return count;
+  }
+
   /** Apakah slug sudah dipakai (untuk menjamin keunikan). */
   async slugExists(slug: string): Promise<boolean> {
     const found = await this.prisma.article.findUnique({

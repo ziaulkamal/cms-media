@@ -48,6 +48,17 @@ export const articlesApi = {
     unwrap<Article>(
       http.post<SuccessEnvelope<Article>>(`/articles/${id}/draft`),
     ),
+
+  /** Hapus permanen (tag, revisi & komentar ikut terhapus; media tetap). */
+  remove: (id: string) =>
+    unwrap<{ deleted: number }>(
+      http.delete<SuccessEnvelope<{ deleted: number }>>(`/articles/${id}`),
+    ),
+
+  bulkRemove: (ids: string[]) =>
+    unwrap<{ deleted: number }>(
+      http.post<SuccessEnvelope<{ deleted: number }>>('/articles/bulk-delete', { ids }),
+    ),
 };
 
 export type { Article, Paginated };

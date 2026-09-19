@@ -145,6 +145,31 @@ export class ArticlesService {
     return toArticleView(published);
   }
 
+  /**
+   * Hapus permanen satu atau banyak artikel (editor ke atas: semua; penulis:
+   * hanya miliknya). Semua-atau-tidak: bila satu id tak ada / bukan milik
+   * penulis, tak ada yang terhapus. Media unggulan tidak ikut terhapus.
+   */
+  async removeMany(
+    ids: string[],
+    user: AuthenticatedUser,
+  ): Promise<{ deleted: number }> {
+    const unique = [...new Set(ids)];
+    const owners = await this.repo.findOwners(unique);
+    if (owners.length !== unique.length) {
+      throw new NotFoundError('Sebagian artikel tidak ditemukan.');
+    }
+    const isEditorial = EDITORIAL_ROLES.includes(user.role);
+    if (!isEditorial && owners.some((a) => a.authorId !== user.id)) {
+      throw new ForbiddenError('Ada artikel terpilih yang bukan milik Anda.');
+    }
+    const deleted = await this.repo.deleteMany(unique);
+    this.audit.log(
+      `article.delete count=${deleted} ids=${unique.join(',')} by=${user.id}`,
+    );
+    return { deleted };
+  }
+
   /** Arsipkan artikel (editor ke atas atau pemilik). */
   async archive(id: string, user: AuthenticatedUser): Promise<ArticleView> {
     const current = await this.getEntityOrFail(id);

@@ -5,6 +5,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { BulkIdsDto } from '../../common/dto/bulk-ids.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -98,6 +100,24 @@ export class ArticlesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.articles.draft(id, user);
+  }
+
+  /** Hapus permanen banyak artikel (editor ke atas; penulis hanya miliknya). */
+  @Post('bulk-delete')
+  bulkRemove(
+    @Body() dto: BulkIdsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.articles.removeMany(dto.ids, user);
+  }
+
+  /** Hapus permanen satu artikel (editor ke atas atau pemilik). */
+  @Delete(':id')
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.articles.removeMany([id], user);
   }
 
   /** Ubah artikel (pemilik atau editor ke atas). */

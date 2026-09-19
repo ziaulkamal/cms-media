@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { Archive, Eye, FileText, ImageOff, PencilLine, Plus, Rocket, Search, Send, SlidersHorizontal, X } from 'lucide-vue-next';
+import { Archive, Eye, FileText, ImageOff, PencilLine, Plus, Rocket, Search, Send, SlidersHorizontal, Trash2, X } from 'lucide-vue-next';
 import { ApiError } from '@/api/http';
 import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
@@ -54,7 +54,7 @@ const params = computed<ArticleQuery>(() => ({
 const { data, isLoading, error } = useArticlesQuery(params);
 const { data: categories } = useCategoriesQuery();
 const { data: tags } = useTagsQuery();
-const { submit, publish, archive, draft, update } = useArticleMutations();
+const { submit, publish, archive, draft, update, remove, bulkRemove } = useArticleMutations();
 
 const categoryOptions = computed(() =>
   (categories.value ?? []).map((c) => ({ value: c.slug, label: c.name })),
@@ -173,6 +173,12 @@ function rowActions(row: Article): RowAction[] {
       onClick: () => run(archive.mutateAsync(row.id), 'Artikel diarsipkan.'),
     });
   }
+  items.push({
+    label: 'Hapus permanen',
+    icon: Trash2,
+    danger: true,
+    onClick: () => void deleteOne(row),
+  });
   return items;
 }
 
@@ -236,6 +242,38 @@ async function bulkDraft(): Promise<void> {
 async function bulkArchive(): Promise<void> {
   if (await confirm({ title: 'Arsipkan massal', message: `Arsipkan ${selectedCount.value} artikel terpilih?`, danger: true, confirmText: 'Arsipkan' }))
     await runBulk((id) => archive.mutateAsync(id), 'diarsipkan');
+}
+
+const DELETE_WARNING = 'Tindakan ini permanen dan tidak bisa dibatalkan. Tag, riwayat revisi, dan komentar artikel ikut terhapus; file media tetap tersimpan di pustaka Media.';
+
+/** Hapus permanen artikel terpilih dalam satu permintaan (semua-atau-tidak). */
+async function bulkDelete(): Promise<void> {
+  const ids = [...selectedIds.value];
+  if (!ids.length) return;
+  const ok = await confirm({
+    title: 'Hapus permanen',
+    message: `Hapus ${ids.length} artikel terpilih? ${DELETE_WARNING}`,
+    confirmText: 'Hapus Permanen',
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    const res = await bulkRemove.mutateAsync(ids);
+    toast.success(`${res.deleted} artikel dihapus permanen.`);
+    clearSelection();
+  } catch (e) {
+    toast.error(e instanceof ApiError ? e.message : 'Gagal menghapus artikel.');
+  }
+}
+
+async function deleteOne(row: Article): Promise<void> {
+  const ok = await confirm({
+    title: 'Hapus permanen',
+    message: `Hapus artikel "${row.title}"? ${DELETE_WARNING}`,
+    confirmText: 'Hapus Permanen',
+    danger: true,
+  });
+  if (ok) await run(remove.mutateAsync(row.id), 'Artikel dihapus permanen.');
 }
 
 // ── Edit massal (kategori & tag) ─────────────────────────────────────────
@@ -364,6 +402,10 @@ async function applyBulkEdit(): Promise<void> {
           <Button size="sm" variant="secondary" :disabled="bulkBusy" @click="bulkArchive">
             <Archive class="h-3.5 w-3.5" />
             Arsipkan
+          </Button>
+          <Button size="sm" variant="danger" :loading="bulkRemove.isPending.value" :disabled="bulkBusy" @click="bulkDelete">
+            <Trash2 class="h-3.5 w-3.5" />
+            Hapus
           </Button>
         </div>
         <button

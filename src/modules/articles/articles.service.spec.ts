@@ -6,6 +6,7 @@ import { ArticleStatus, UserRole } from '@prisma/client';
 import {
   ConflictError,
   ForbiddenError,
+  NotFoundError,
 } from '../../common/errors/domain-error';
 import { AuthenticatedUser } from '../../common/types/authenticated-user';
 import { CategoriesService } from '../categories/categories.service';
@@ -46,6 +47,8 @@ describe('ArticlesService', () => {
     findById: jest.fn(),
     update: jest.fn(),
     publishWithRevision: jest.fn(),
+    findOwners: jest.fn(),
+    deleteMany: jest.fn(),
   } as unknown as ArticlesRepository;
   const categories = {
     getDefaultId: jest.fn().mockResolvedValue('default-cat'),
@@ -108,5 +111,30 @@ describe('ArticlesService', () => {
     const result = await service.publish('a1', {}, editor);
     expect(result.status).toBe(ArticleStatus.PUBLISHED);
     expect(repo.publishWithRevision).toHaveBeenCalledTimes(1);
+  });
+
+  it('removeMany: editor menghapus artikel siapa pun (id ganda digabung)', async () => {
+    (repo.findOwners as jest.Mock).mockResolvedValue([
+      { id: 'a1', authorId: 'u1' },
+      { id: 'a2', authorId: 'someone-else' },
+    ]);
+    (repo.deleteMany as jest.Mock).mockResolvedValue(2);
+    await expect(service.removeMany(['a1', 'a2', 'a1'], editor)).resolves.toEqual({ deleted: 2 });
+    expect(repo.deleteMany).toHaveBeenCalledWith(['a1', 'a2']);
+  });
+
+  it('removeMany: penulis hanya boleh miliknya; campuran ditolak utuh', async () => {
+    (repo.findOwners as jest.Mock).mockResolvedValue([
+      { id: 'a1', authorId: 'u1' },
+      { id: 'a2', authorId: 'someone-else' },
+    ]);
+    await expect(service.removeMany(['a1', 'a2'], author)).rejects.toBeInstanceOf(ForbiddenError);
+    expect(repo.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('removeMany: id yang tidak ada -> NotFound, tak ada yang terhapus', async () => {
+    (repo.findOwners as jest.Mock).mockResolvedValue([{ id: 'a1', authorId: 'u1' }]);
+    await expect(service.removeMany(['a1', 'hilang'], editor)).rejects.toBeInstanceOf(NotFoundError);
+    expect(repo.deleteMany).not.toHaveBeenCalled();
   });
 });

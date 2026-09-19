@@ -80,5 +80,13 @@ export function useArticleMutations() {
       mutationFn: (id: string) => articlesApi.draft(id),
       onSuccess: invalidate,
     }),
+    remove: useMutation({
+      mutationFn: (id: string) => articlesApi.remove(id),
+      onSuccess: invalidate,
+    }),
+    bulkRemove: useMutation({
+      mutationFn: (ids: string[]) => articlesApi.bulkRemove(ids),
+      onSuccess: invalidate,
+    }),
   };
 }
