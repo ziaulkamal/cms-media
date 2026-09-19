@@ -45,5 +45,10 @@ export function useUserMutations() {
     resetPassword: useMutation({
       mutationFn: (id: string) => usersApi.resetPassword(id),
     }),
+    remove: useMutation({
+      mutationFn: (vars: { id: string; transferTo?: string }) =>
+        usersApi.remove(vars.id, vars.transferTo),
+      onSuccess: invalidate,
+    }),
   };
 }

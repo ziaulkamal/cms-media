@@ -1,6 +1,7 @@
 <!-- admin/src/pages/users/Index.vue — kelola staf: list, create, edit (role, isActive). -->
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
+import { Trash2 } from 'lucide-vue-next';
 import { ApiError } from '@/api/http';
 import Alert from '@/components/ui/Alert.vue';
 import Button from '@/components/ui/Button.vue';
@@ -14,14 +15,17 @@ import UserCard from '@/components/users/UserCard.vue';
 import { useConfirm } from '@/composables/useConfirm';
 import { useUserMutations, useUsersQuery } from '@/composables/useUsers';
 import { useToast } from '@/composables/useToast';
+import { usersApi } from '@/api/users';
 import { toOptions, userRoleLabel } from '@/lib/labels';
-import type { User } from '@/types/cms';
+import { useAuthStore } from '@/stores/auth';
+import type { User, UserOwnership } from '@/types/cms';
 
 const toast = useToast();
 const { confirm } = useConfirm();
 const page = ref(1);
 const { data, isLoading, error } = useUsersQuery(page, 20);
-const { create, update, setPassword, resetPassword } = useUserMutations();
+const { create, update, setPassword, resetPassword, remove } = useUserMutations();
+const auth = useAuthStore();
 
 const open = ref(false);
 const editingId = ref<string | null>(null);
@@ -126,6 +130,70 @@ async function copyGenerated(): Promise<void> {
     toast.success('Password disalin.');
   } catch {
     toast.error('Gagal menyalin password.');
+  }
+}
+
+// ── Hapus user ──
+const delOpen = ref(false);
+const delId = ref('');
+const delName = ref('');
+const delLoading = ref(false);
+const delError = ref('');
+const delOwned = ref<UserOwnership | null>(null);
+const delTransferTo = ref('');
+const delCandidates = ref<{ value: string; label: string }[]>([]);
+/** Akun yang sedang login tidak boleh menghapus dirinya sendiri. */
+const isSelf = computed(() => !!editingId.value && editingId.value === auth.user?.id);
+const delHasContent = computed(
+  () => !!delOwned.value && delOwned.value.articles + delOwned.value.media + delOwned.value.revisions > 0,
+);
+
+/** Cek konten milik user + siapkan calon penerima (user aktif lain). */
+async function openDelete(): Promise<void> {
+  if (!editingId.value) return;
+  delId.value = editingId.value;
+  delName.value = form.name;
+  delError.value = '';
+  delTransferTo.value = '';
+  delOwned.value = null;
+  delLoading.value = true;
+  open.value = false;
+  delOpen.value = true;
+  try {
+    const [owned, all] = await Promise.all([
+      usersApi.ownership(delId.value),
+      usersApi.list(1, 100),
+    ]);
+    delOwned.value = owned;
+    delCandidates.value = all.items
+      .filter((u) => u.id !== delId.value && u.isActive)
+      .map((u) => ({ value: u.id, label: `${u.name} — ${userRoleLabel[u.role]}` }));
+  } catch (e) {
+    delError.value = e instanceof ApiError ? e.message : 'Gagal memeriksa konten user.';
+  } finally {
+    delLoading.value = false;
+  }
+}
+
+async function onDelete(): Promise<void> {
+  delError.value = '';
+  if (delHasContent.value && !delTransferTo.value) {
+    delError.value = 'Pilih user penerima konten terlebih dahulu.';
+    return;
+  }
+  try {
+    const res = await remove.mutateAsync({
+      id: delId.value,
+      transferTo: delHasContent.value ? delTransferTo.value : undefined,
+    });
+    delOpen.value = false;
+    toast.success(
+      res.transferred
+        ? `User ${delName.value} dihapus; kontennya dipindah.`
+        : `User ${delName.value} dihapus.`,
+    );
+  } catch (e) {
+    delError.value = e instanceof ApiError ? e.message : 'Gagal menghapus user.';
   }
 }
 
@@ -261,9 +329,56 @@ async function onSubmit(): Promise<void> {
           </Button>
         </div>
       </section>
+
+      <!-- Hapus user (tidak untuk akun sendiri) -->
+      <section v-if="editingId && !isSelf" class="border-border mt-5 border-t pt-5">
+        <h4 class="text-danger text-sm font-semibold">Hapus user</h4>
+        <div class="mt-1 flex items-center justify-between gap-3">
+          <p class="text-text-muted text-xs">
+            Akun dihapus permanen. Artikel & media miliknya dipindah ke user lain yang Anda pilih.
+          </p>
+          <Button variant="danger" size="sm" @click="openDelete">
+            <Trash2 class="h-3.5 w-3.5" /> Hapus
+          </Button>
+        </div>
+      </section>
       <template #footer>
         <Button variant="secondary" @click="open = false">Batal</Button>
         <Button :loading="saving" @click="onSubmit">Simpan</Button>
+      </template>
+    </Modal>
+
+    <Modal v-model:open="delOpen" :title="`Hapus user ${delName}`">
+      <p v-if="delLoading" class="text-text-muted text-sm">Memeriksa konten milik user…</p>
+      <template v-else-if="delOwned">
+        <template v-if="delHasContent">
+          <Alert variant="warning">
+            {{ delName }} memiliki {{ delOwned.articles }} artikel, {{ delOwned.media }} media, dan
+            {{ delOwned.revisions }} revisi. Semuanya dipindah ke user penerima; komentar tetap tersimpan.
+          </Alert>
+          <SelectInput
+            v-model="delTransferTo"
+            class="mt-4"
+            label="Pindahkan konten ke"
+            placeholder="Pilih user penerima"
+            :options="delCandidates"
+          />
+        </template>
+        <p v-else class="text-text-primary text-sm">
+          {{ delName }} tidak memiliki artikel maupun media. Akun akan dihapus permanen.
+        </p>
+      </template>
+      <p v-if="delError" class="text-danger mt-3 text-sm">{{ delError }}</p>
+      <template #footer>
+        <Button variant="secondary" @click="delOpen = false">Batal</Button>
+        <Button
+          variant="danger"
+          :loading="remove.isPending.value"
+          :disabled="delLoading || !delOwned"
+          @click="onDelete"
+        >
+          Hapus Permanen
+        </Button>
       </template>
     </Modal>
   </div>

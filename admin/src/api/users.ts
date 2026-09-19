@@ -6,6 +6,7 @@ import type {
   SuccessEnvelope,
   UpdateUserPayload,
   User,
+  UserOwnership,
 } from '@/types/cms';
 import { http, unwrap, unwrapPaginated } from './http';
 
@@ -42,6 +43,21 @@ export const usersApi = {
     unwrap<ResetPasswordResult>(
       http.post<SuccessEnvelope<ResetPasswordResult>>(
         `/admin/users/${id}/password/reset`,
+      ),
+    ),
+
+  /** Jumlah artikel/media/revisi milik user (perlu dipindah sebelum hapus). */
+  ownership: (id: string) =>
+    unwrap<UserOwnership>(
+      http.get<SuccessEnvelope<UserOwnership>>(`/admin/users/${id}/ownership`),
+    ),
+
+  /** Hapus user; konten dipindah ke `transferTo` bila diisi. */
+  remove: (id: string, transferTo?: string) =>
+    unwrap<{ id: string; transferred: UserOwnership | null }>(
+      http.delete<SuccessEnvelope<{ id: string; transferred: UserOwnership | null }>>(
+        `/admin/users/${id}`,
+        { params: transferTo ? { transferTo } : undefined },
       ),
     ),
 };

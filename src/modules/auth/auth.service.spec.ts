@@ -16,7 +16,10 @@ describe('AuthService', () => {
     role: UserRole.ADMIN,
   } as User;
 
-  const usersService = { verifyCredentials: jest.fn() } as unknown as UsersService;
+  const usersService = {
+    verifyCredentials: jest.fn(),
+    findActive: jest.fn(),
+  } as unknown as UsersService;
   const jwtService = {
     signAsync: jest.fn().mockResolvedValue('signed-token'),
   } as unknown as JwtService;
@@ -45,5 +48,22 @@ describe('AuthService', () => {
       UnauthorizedError,
     );
     expect(jwtService.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('refresh: user yang dihapus/nonaktif ditolak', async () => {
+    (usersService.findActive as jest.Mock).mockResolvedValue(null);
+    await expect(
+      service.refresh({ id: 'u1', email: user.email, role: UserRole.ADMIN }),
+    ).rejects.toBeInstanceOf(UnauthorizedError);
+    expect(jwtService.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('refresh: token baru memakai role terkini dari database', async () => {
+    (usersService.findActive as jest.Mock).mockResolvedValue({ ...user, role: UserRole.EDITOR });
+    await service.refresh({ id: 'u1', email: user.email, role: UserRole.ADMIN });
+    expect(jwtService.signAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: 'u1', role: UserRole.EDITOR }),
+      expect.anything(),
+    );
   });
 });

@@ -135,6 +135,13 @@ export interface User {
   createdAt: string;
 }
 
+/** Konten milik user yang harus dipindah sebelum user dihapus. */
+export interface UserOwnership {
+  articles: number;
+  media: number;
+  revisions: number;
+}
+
 /** Rubrik/kategori (flat; hierarki dirakit di client via parentId). */
 export interface Category {
   id: string;

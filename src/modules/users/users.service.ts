@@ -2,8 +2,8 @@
  * src/modules/users/users.service.ts
  * Aturan bisnis User: hashing kredensial, jaga keunikan email, mapping aman.
  */
-import { Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { Injectable, Logger } from '@nestjs/common';
+import { User, UserRole } from '@prisma/client';
 import * as argon2 from 'argon2';
 import {
   ConflictError,
@@ -12,15 +12,18 @@ import {
 } from '../../common/errors/domain-error';
 import { Paginated } from '../../common/interceptors/response.interceptor';
 import { paginate } from '../../common/dto/paginated';
+import { AuthenticatedUser } from '../../common/types/authenticated-user';
 import { generatePassword } from '../../common/utils/password';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { toUserView, UserView } from './entities/user.entity';
-import { UsersRepository } from './users.repository';
+import { UserOwnership, UsersRepository } from './users.repository';
 
 /** Service User: orkestrasi pembuatan/perubahan akun staf redaksi. */
 @Injectable()
 export class UsersService {
+  private readonly audit = new Logger('Audit');
+
   constructor(private readonly repo: UsersRepository) {}
 
   /** Buat user baru; password di-hash argon2, email wajib unik. */
@@ -90,6 +93,58 @@ export class UsersService {
       passwordHash: await argon2.hash(password),
     });
     return { user: toUserView(user), password };
+  }
+
+  /** Konten milik user (artikel/media/revisi) — penentu perlu transfer saat hapus. */
+  async ownership(id: string): Promise<UserOwnership> {
+    await this.getEntityOrFail(id);
+    return this.repo.countOwnership(id);
+  }
+
+  /**
+   * Hapus user. Tak boleh akun sendiri atau admin aktif terakhir. User yang
+   * masih punya artikel/media/revisi wajib menyebut `transferTo` (user aktif
+   * lain) — kontennya dipindah dulu; komentar tetap ada tanpa pemilik.
+   */
+  async remove(
+    id: string,
+    actor: AuthenticatedUser,
+    transferTo?: string,
+  ): Promise<{ id: string; transferred: UserOwnership | null }> {
+    if (id === actor.id) {
+      throw new ValidationError('Tidak dapat menghapus akun Anda sendiri.');
+    }
+    const user = await this.getEntityOrFail(id);
+    if (user.role === UserRole.ADMIN && user.isActive && (await this.repo.countActiveAdmins(id)) === 0) {
+      throw new ValidationError('Admin aktif terakhir tidak dapat dihapus.');
+    }
+
+    const owned = await this.repo.countOwnership(id);
+    const hasContent = owned.articles + owned.media + owned.revisions > 0;
+    if (hasContent && !transferTo) {
+      throw new ConflictError(
+        `User masih memiliki ${owned.articles} artikel, ${owned.media} media, dan ${owned.revisions} revisi. Pilih user penerima konten.`,
+      );
+    }
+    if (transferTo) {
+      if (transferTo === id) throw new ValidationError('User penerima harus berbeda.');
+      const target = await this.repo.findById(transferTo);
+      if (!target || !target.isActive) {
+        throw new ValidationError('User penerima tidak ditemukan atau nonaktif.');
+      }
+    }
+
+    await this.repo.deleteWithTransfer(id, hasContent ? (transferTo ?? null) : null);
+    this.audit.log(
+      `user.delete id=${id} email=${user.email} transferTo=${hasContent ? transferTo : '-'} by=${actor.id}`,
+    );
+    return { id, transferred: hasContent ? owned : null };
+  }
+
+  /** User masih ada & aktif? (dipakai refresh token — akun dihapus/nonaktif ditolak). */
+  async findActive(id: string): Promise<User | null> {
+    const user = await this.repo.findById(id);
+    return user?.isActive ? user : null;
   }
 
   /** Verifikasi kredensial untuk login; kembalikan user bila cocok. */

@@ -5,6 +5,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -14,9 +15,12 @@ import {
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { AuthenticatedUser } from '../../common/types/authenticated-user';
 import { CreateUserDto } from './dto/create-user.dto';
+import { DeleteUserQueryDto } from './dto/delete-user-query.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
@@ -65,5 +69,21 @@ export class UsersController {
   @Post(':id/password/reset')
   resetPassword(@Param('id', ParseUUIDPipe) id: string) {
     return this.users.resetPassword(id);
+  }
+
+  /** Jumlah artikel/media/revisi milik user (penentu perlu transfer saat hapus). */
+  @Get(':id/ownership')
+  ownership(@Param('id', ParseUUIDPipe) id: string) {
+    return this.users.ownership(id);
+  }
+
+  /** Hapus user; konten miliknya dipindah ke `transferTo` bila ada. */
+  @Delete(':id')
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: DeleteUserQueryDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.users.remove(id, actor, query.transferTo);
   }
 }

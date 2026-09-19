@@ -51,9 +51,18 @@ export class AuthService {
     return { tokens: await this.issueTokens(identity), user: identity };
   }
 
-  /** Terbitkan token baru dari refresh token yang sudah tervalidasi (rotasi). */
+  /**
+   * Terbitkan token baru dari refresh token yang sudah tervalidasi (rotasi).
+   * User dicek ulang ke DB: akun yang dihapus/dinonaktifkan tidak bisa
+   * memperpanjang sesi, dan perubahan role langsung berlaku di token baru.
+   */
   async refresh(user: AuthenticatedUser): Promise<TokenPair> {
-    return this.issueTokens(user);
+    const current = await this.users.findActive(user.id);
+    if (!current) {
+      this.audit.warn(`refresh.denied userId=${user.id}`);
+      throw new UnauthorizedError('Sesi berakhir. Silakan login kembali.');
+    }
+    return this.issueTokens({ id: current.id, email: current.email, role: current.role });
   }
 
   /** Ganti password mandiri: delegasi ke UsersService + catat audit. */
