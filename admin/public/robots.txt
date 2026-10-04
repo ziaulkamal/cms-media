@@ -1,0 +1,10 @@
+# admin.poraxv.id — Panel admin CMS Media SIMPORA PORA XV
+# Semua jalur ditolak untuk crawler mesin pencari.
+# Panel hanya ditujukan untuk admin terotentikasi, bukan untuk pengindeksan publik.
+
+User-agent: *
+Disallow: /
+
+# Juga larang pengindeksan file dari arsip Internet Archive.
+User-agent: ia_archiver
+Disallow: /
